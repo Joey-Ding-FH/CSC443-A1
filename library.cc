@@ -25,8 +25,8 @@ int fixed_len_sizeof(Record *record) {
 void fixed_len_write(Record *record, void *buf) {
 	for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
 		for (const char *i = *it; *i != '\0'; i++) {
-			*(char*)buf = *i;
-			buf = ((char*)buf) + 1;
+				*(char*)buf = *i;
+				buf = ((char*)buf) + 1;
     		}
 	}
 }
