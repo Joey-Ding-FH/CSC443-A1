@@ -1,54 +1,107 @@
 #include <iostream>
 #include <string>
-#include <iterator>
+#include <stdio.h>
+#include <stdlib.h>
+#include "csv2heapfile.h"
 #include "library.h"
 
 using namespace std;
 
-int main() {
-	Record *record = new Record(); 
+int main () {
+  /*
+  Heapfile *heapfile = new Heapfile();
+  FILE *pFile = fopen ("file" , "w");
 
-	V v1 = "1234567890";
-	V v2 = "abcdefghij";
+  init_heapfile(heapfile, 16384, pFile);
 
-	record->push_back(v2);
-	record->push_back(v1);
+  fclose(pFile);
+  */
 
-	cout << fixed_len_sizeof(record) << endl;
+  
+  
+  // FILE *pFile = fopen ("file2" , "wb");
+  // uint32_t a = (uint32_t) 1;
+  // uint32_t b = (uint32_t) 32714;
 
-	void *buf = malloc(fixed_len_sizeof(record));
+  // fwrite(&a, sizeof(uint32_t), 1, pFile);
+  // fwrite(&b, sizeof(uint32_t), 1, pFile);
 
-	fixed_len_write(record, buf);
+  // fclose(pFile);
 
-	cout << "buf is " << (char *)buf << endl;
+  // char * buffer;
+  // size_t result;
 
-	Record *new_record = new Record();
+  // pFile = fopen ( "file2" , "rb" );
+  // if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
 
-	fixed_len_read(buf, 20, new_record);
+  // // allocate memory to contain the whole file:
+  // buffer = (char*) malloc (sizeof(char));
+  // if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
 
-	
-	for (std::vector<V>::iterator it = new_record->begin() ; it != new_record->end(); ++it) {
-		cout << *it << endl;
-	} 
+  // // copy the file into the buffer:
+  // while ((result = fread (buffer,sizeof(char),1,pFile)) == sizeof(char)) {
+  // 	cout << "char is " << buffer << endl;
+  // 	for (int i = 7; i >= 0; i--) { // or (int i = 0; i < 8; i++)  if you want reverse bit order in bytes
+  //       cout << ((*buffer >> i) & 1);
+  //   }
+  //   cout << endl;
+  // }
+  
+  
 
-	cout << fixed_len_sizeof(new_record) << endl;
+  // pFile = fopen ( "file2" , "rb" );
+  // if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
 
-	free(buf);
+  // cout << "pos is " << ftell(pFile) << endl;
+  // cout << read_offset(pFile) << endl;
+  // cout << "pos is " << ftell(pFile) << endl;
+  // cout << read_offset(pFile) << endl;
+  // fclose(pFile);
+
+  FILE *pFile = fopen ("heapfile" , "wb");
+  fclose(pFile);
+  
+  Heapfile *heapfile = new Heapfile();
+  int page_size = 16384;
+  FILE *file = fopen ("heapfile" , "r+");
+
+  init_heapfile(heapfile, page_size, file);
+  alloc_page(heapfile);
+  alloc_page(heapfile);
+
+  fseek(file, sizeof(Page) + 4, SEEK_SET);
+  cout << read_offset(file) << endl;
+
+  fseek(file, 3, SEEK_CUR);
+  cout << read_offset(file) << endl;
+  // char * buffer;
+  // size_t result;
+
+  // FILE *pFile = fopen ( "heapfile" , "rb" );
+  // if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
+
+  // // allocate memory to contain the whole file:
+  // buffer = (char*) malloc (sizeof(char));
+  // if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
 
 
-	Page *p = new Page();
-	init_fixed_len_page(p, 86, 10);
+  // fseek(file, sizeof(Page) + sizeof(uint32_t), SEEK_SET);
+  // int n = 0;
+  // // copy the file into the buffer:
+  // while ((result = fread (buffer,sizeof(char),1,pFile)) == sizeof(char) && n <=10) {
+  //   n++;
+  //  cout << "char is " << buffer << endl;
+  //  for (int i = 7; i >= 0; i--) { // or (int i = 0; i < 8; i++)  if you want reverse bit order in bytes
+  //       cout << ((*buffer >> i) & 1);
+  //   }
+  //   cout << endl;
+  // }
 
-	cout << fixed_len_page_capacity(p) << endl;
+  Page *page = new Page();
 
-	int a = 1;
-	int b = number & (1 << a);
+  read_page(heapfile, 1, page);
+  read_page(heapfile, 2, page);
+  read_page(heapfile, 3, page);
 
-	for (int i = 0; i < 32; i++) {
-		cout << b << endl;
-		b = number & (1 << a);
-	}
-
-
-	return 0;
+  return 0;
 }

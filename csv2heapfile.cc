@@ -15,7 +15,9 @@ using namespace std;
 int get_free_space_size(int page_size);
 int get_number_of_pages(int page_size);
 size_t fwrite_with_check(const void *ptr, size_t size, size_t count, FILE *file);
+size_t fread_with_check(void *ptr, size_t size, size_t count, FILE *file);
 uint32_t alloc_page_at_end(FILE *file, int page_size);
+int reach_page(Heapfile *heapfile, PageID pid);
 
 /**
  * Initalize a heapfile to use the file and page size given.
@@ -41,13 +43,14 @@ PageID alloc_page(Heapfile *heapfile) {
 	int page_size = heapfile->page_size;
 	FILE *file = heapfile->file_ptr;
 
+	rewind(file);
 	fflush(file);
+
 	fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_SET);
 
 	int free_space_size = get_free_space_size(page_size);
 	int number_of_pages = get_number_of_pages(page_size);
 	int page_number = 0;
-
 
 	while(read_offset(file) != 0) {
 		fseek(file, free_space_size, SEEK_CUR);
@@ -79,6 +82,60 @@ PageID alloc_page(Heapfile *heapfile) {
 	return page_number + 1;
 }
 
+/**
+ * Read a page into memory
+ */
+void read_page(Heapfile *heapfile, PageID pid, Page *page) {
+	int page_size = heapfile->page_size;
+	FILE *file = heapfile->file_ptr;
+	
+	rewind(file);
+
+	if (reach_page(heapfile, pid) == -1) {
+		return;
+	}
+
+	page->data = malloc(page_size);
+
+	fwrite_with_check(page, sizeof(Page), 1, file);
+	fwrite_with_check(page->data, page_size, 1, file);
+}
+
+/**
+ * Write a page from memory to disk
+ */
+void write_page(Page *page, Heapfile *heapfile, PageID pid) {
+	int page_size = heapfile->page_size;
+	FILE *file = heapfile->file_ptr;
+	
+	rewind(file);
+
+	if (reach_page(heapfile, pid) == -1) {
+		return;
+	}
+
+	fread_with_check(page, sizeof(Page), 1, file);
+	fread_with_check(page->data, page_size, 1, file);
+}
+
+int reach_page(Heapfile *heapfile, PageID pid) {
+	int page_size = heapfile->page_size;
+	FILE *file = heapfile->file_ptr;
+
+	fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_SET);
+	fseek(file, (pid - 1) * (OFFSET_SIZE + get_free_space_size(page_size)), SEEK_CUR);
+
+	uint32_t offset = read_offset(file);
+
+	if (offset != 0) {
+		fseek(file, offset, SEEK_SET);
+	} else {
+		fputs("pid doesn't exist\n",stderr);
+		return -1;
+	}
+	return 0;
+}
+
 uint32_t alloc_page_at_end(FILE *file, int page_size) {
 	Page *new_page = new Page();
 	init_fixed_len_page(new_page, page_size, SLOT_SIZE);
@@ -105,6 +162,14 @@ size_t fwrite_with_check(const void *ptr, size_t size, size_t count, FILE *file)
 	return result;
 }
 
+size_t fread_with_check(void *ptr, size_t size, size_t count, FILE *file) {
+	int result;
+	if ((result = fread(ptr, size, count, file)) != 1) {
+		fputs("Read error\n",stderr); 
+	}
+	return result;
+}
+
 int get_free_space_size(int page_size) {
 	return ceil(log2(page_size * 8) / 8);
 }
@@ -120,8 +185,8 @@ uint32_t read_offset(FILE *file) {
 		exit(2);
 	}
 
-	if (fread(buffer, OFFSET_SIZE, 1, file) != 1) {
-		fputs ("Read error\n",stderr);
+	if (fread_with_check(buffer, OFFSET_SIZE, 1, file) != 1) {
+		free(buffer);
 		return 0;
 	}
 
