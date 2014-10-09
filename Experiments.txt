@@ -1,0 +1,32 @@
+Experiments
+
+2.3
+Assume only one table schema:
+100 attributes
+Each attribute 10 bytes each
+(So records are fixed length)
+
+1. Calculate the size of fixed length serialization of records in the table
+2. Use fixed_len_sizeof() to check if agrees with calculation
+
+
+3.2
+1. Plot performance (records/second) versus page 
+size for read/write
+2. Compare this to blocked disk I/O characteristics from tutorial
+3. Discuss why page based format is superior to storing records using a CSV
+4. Discuss short-comings of way we organize pages
+
+4.2
+1. Measure the performance of "csv2heapfile", comment on how the page size affects the performance of load
+
+<Write "select" executable>
+
+2. Measure the performance of query against page size
+3. Comment on the choice of page size and the effects of the range from "start" and "end" on the performance of the query
+
+5.2
+1. Measure the performance of "csv2colstore" against different page sizes
+2. Compare the result with that of "csv2heapfile" in the previous section. Comment on the difference.
+3. Compare the performance of "select2" with that of "select" in the previous section. Comment on the difference.
+4. Compare the performance of "select3" with that of "select" and "select2". Comment on the difference especially with respect to different selection ranges (different values of start and end)
