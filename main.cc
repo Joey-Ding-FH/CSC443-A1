@@ -69,10 +69,10 @@ int main () {
   alloc_page(heapfile);
 
   fseek(file, sizeof(Page) + 4, SEEK_SET);
-  cout << read_offset(file) << endl;
+  // cout << read_offset(file) << endl;
 
   fseek(file, 3, SEEK_CUR);
-  cout << read_offset(file) << endl;
+  // cout << read_offset(file) << endl;
   // char * buffer;
   // size_t result;
 
@@ -96,11 +96,15 @@ int main () {
   //   cout << endl;
   // }
 
-  Page *page = new Page();
+  Page *page = (Page *) malloc(sizeof(Page));
 
   read_page(heapfile, 1, page);
+  cout << "page 1 size is " << page->page_size << endl;
+  cout << "slot 1 size is " << page->slot_size << endl;
+
   read_page(heapfile, 2, page);
-  read_page(heapfile, 3, page);
+  cout << "page 2 size is " << page->page_size << endl;
+  cout << "slot 2 size is " << page->slot_size << endl;
 
   return 0;
 }

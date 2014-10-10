@@ -189,8 +189,6 @@ PageID alloc_page(Heapfile *heapfile) {
 void read_page(Heapfile *heapfile, PageID pid, Page *page) {
     int page_size = heapfile->page_size;
     FILE *file = heapfile->file_ptr;
-    
-    rewind(file);
 
     if (reach_page(heapfile, pid) == -1) {
         return;
@@ -198,8 +196,8 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page) {
 
     page->data = malloc(page_size);
 
-    fwrite_with_check(page, sizeof(Page), 1, file);
-    fwrite_with_check(page->data, page_size, 1, file);
+    fread_with_check(page, sizeof(Page), 1, file);
+    fread_with_check(page->data, page_size, 1, file);
 }
 
 /**
@@ -208,8 +206,6 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page) {
 void write_page(Page *page, Heapfile *heapfile, PageID pid) {
     int page_size = heapfile->page_size;
     FILE *file = heapfile->file_ptr;
-    
-    rewind(file);
 
     if (reach_page(heapfile, pid) == -1) {
         return;
@@ -278,7 +274,8 @@ int reach_page(Heapfile *heapfile, PageID pid) {
         fseek(file, next_dir_offset, SEEK_SET);
     }
 
-    fseek(file, order_in_dir * get_entry_size(page_size), SEEK_CUR);
+    fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
+    fseek(file, (order_in_dir - 1) * get_entry_size(page_size), SEEK_CUR);
     uint32_t offset = read_offset(file);
 
     if (offset != 0) {
