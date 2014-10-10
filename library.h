@@ -7,12 +7,23 @@ using namespace std;
 
 typedef const char* V;
 typedef vector<V> Record;
+typedef int PageID;
 
 typedef struct {
     void *data;
     int page_size;
     int slot_size;
 } Page;
+
+typedef struct {
+    FILE *file_ptr;
+    int page_size;
+} Heapfile;
+ 
+typedef struct {
+    int page_id;
+    int slot;
+} RecordID;
 
 /**
  * Compute the number of bytes required to serialize record
@@ -62,5 +73,38 @@ void write_fixed_len_page(Page *page, int slot, Record *r);
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r);
+
+/**
+ * Initalize a heapfile to use the file and page size given.
+ */
+void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
+
+/**
+ * Allocate another page in the heapfile.  This grows the file by a page.
+ */
+PageID alloc_page(Heapfile *heapfile);
+
+// TODO - delete this.
+uint32_t read_offset(FILE *file);
+
+/**
+ * Read a page into memory
+ */
+void read_page(Heapfile *heapfile, PageID pid, Page *page);
+
+/**
+ * Write a page from memory to disk
+ */
+void write_page(Page *page, Heapfile *heapfile, PageID pid);
+
+class RecordIterator {
+    private:
+        Heapfile *heapfile;
+        RecordID *cur_rid;
+    public:
+        RecordIterator(Heapfile *hFile);
+        Record next();
+        bool hasNext();
+};
  
 #endif
