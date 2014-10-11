@@ -8,7 +8,6 @@ using namespace std;
 #define SLOT_SIZE 1000
 #define OFFSET_SIZE sizeof(uint32_t)
 #define ATTRIBUTE_SIZE 10
-#define RECORD_SIZE 1000
 
 
 typedef const char* V;

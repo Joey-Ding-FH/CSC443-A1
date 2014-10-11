@@ -46,32 +46,16 @@ void fixed_len_write(Record *record, void *buf) {
 void fixed_len_read(void *buf, int size, Record *record) {
 
 	assert(size >= ATTRIBUTE_SIZE); //at least one attribute is being read
-	int total_size_read = 0;
-	int pos = 0;
 
-    char *temp = (char *) malloc(ATTRIBUTE_SIZE + 1);
-    memset(temp, '\0', ATTRIBUTE_SIZE + 1);
-
-	while (total_size_read < size && *(((char *)buf) + total_size_read) != '\0') {
-        // strncpy(temp, ((char *)buf + total_size_read), ATTRIBUTE_SIZE);
-        // total_size_read += ATTRIBUTE_SIZE;
-        // cout << temp << endl; //testing testing
-        // record->push_back(temp);
-        // memset(temp, '\0', ATTRIBUTE_SIZE + 1);
-
-		*(temp + pos) = *(((char *)buf) + total_size_read);
-		total_size_read++;
-		pos++;
-
-        if (pos == ATTRIBUTE_SIZE) {
-			pos = 0;
-			record->push_back(temp);
-            cout << temp << endl;
-            cout << total_size_read << endl;
-    		memset(temp, '\0', ATTRIBUTE_SIZE);
-        }
+	while (size >= ATTRIBUTE_SIZE){
+        char *temp = (char *) malloc(ATTRIBUTE_SIZE + 1);
+    	memset(temp, '\0', ATTRIBUTE_SIZE + 1);
+        record->push_back(temp);
+     	strncpy(temp, (char *)buf, ATTRIBUTE_SIZE);
+        
+        size -= ATTRIBUTE_SIZE;
+        buf = ((char*)buf) + ATTRIBUTE_SIZE;
 	}
-	free(temp);
 }
 
 /**
@@ -83,10 +67,11 @@ void init_fixed_len_page(Page *page, int page_size, int slot_size) {
 	page->data = malloc(page_size);
 	page->page_size = page_size;
 	page->slot_size = slot_size;
+	page->slot_info = new ByteArray;
 
 	int num_slots = fixed_len_page_capacity(page);
 	for (int i = 0; i < num_slots; i++)
-		page->slot_info->push_back((char)0);
+		page->slot_info->push_back('0');
 }
 
 /**
@@ -96,7 +81,6 @@ int fixed_len_page_capacity(Page *page) {
 	return (page->page_size / page->slot_size);
 }
 
-
 /**
  * Calculate the free space (number of free slots) in the page
  */
@@ -104,9 +88,10 @@ int fixed_len_page_freeslots(Page *page) {
 	
 	int num_free = 0;
 	//std::vector<char>::iterator it;
-	for (std::vector<char>::iterator it = page->slot_info->begin(); it != page->slot_info->end(); it++)
-		if (*it == '0')
+	for (int i = 0; i < page->slot_info->size(); i++){
+		if (page->slot_info->at(i) == '0')
 			num_free++;
+	}
 
 	return num_free; 
 }
@@ -121,15 +106,11 @@ int add_fixed_len_page(Page *page, Record *r){
 	
 	int free_slots = fixed_len_page_freeslots(page);
 	if (free_slots > 0) {
-		int slot_ind = 0;
-		//std::vector<char>::iterator it; 
-		for (std::vector<char>::iterator it = page->slot_info->begin(); it != page->slot_info->end(); it++){
-			if (*it == '0'){
-				write_fixed_len_page(page, slot_ind, r);
-				return slot_ind;
-			}	
-			else 
-				slot_ind++;
+		for (int ind = 0; ind < page->slot_info->size(); ind++){
+			if (page->slot_info->at(ind) == '0'){
+				write_fixed_len_page(page, ind, r);
+				return ind;
+			}
 		}
 	
 	}
@@ -141,7 +122,7 @@ int add_fixed_len_page(Page *page, Record *r){
  */
 void write_fixed_len_page(Page *page, int slot, Record *r){
 	
-	char *buf = ((char *)page->data + (slot*RECORD_SIZE));
+	char *buf = ((char *)page->data + (slot*SLOT_SIZE));
 	fixed_len_write(r, buf);
 	
 }
@@ -151,8 +132,8 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
 	
-	char *buf = ((char * )page->data + (slot*RECORD_SIZE));
-	fixed_len_read(buf, RECORD_SIZE, r);
+	char *buf = ((char * )page->data + (slot*SLOT_SIZE));
+	fixed_len_read(buf, SLOT_SIZE, r);
 }
 
 
