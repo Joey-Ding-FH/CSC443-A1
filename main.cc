@@ -106,5 +106,7 @@ int main () {
   cout << "page 2 size is " << page->page_size << endl;
   cout << "slot 2 size is " << page->slot_size << endl;
 
+  read_page(heapfile, 3, page);
+
   return 0;
 }

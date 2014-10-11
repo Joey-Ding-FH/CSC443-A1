@@ -6,7 +6,9 @@
 
 #define ATTRIBUTE_LENGTH 10
 #define BIT_SIZE 0.125
-#define SLOT_SIZE 1000
+#define ATTR_SIZE 10
+#define ATTR_PER_RECORD 100
+#define SLOT_SIZE ATTR_SIZE * ATTR_PER_RECORD
 #define OFFSET_SIZE sizeof(uint32_t)
 
 int get_entry_size(int page_size);
@@ -62,6 +64,7 @@ void fixed_len_read(void *buf, int size, Record *record) {
                                   //can't you just reuse the same temp?
         }
     } //also you didn't call free, so temp will cause a memory leak..
+
 }
 
 /**
@@ -211,6 +214,8 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid) {
         return;
     }
 
+    // TODO: Update entry in dir page.
+
     fread_with_check(page, sizeof(Page), 1, file);
     fread_with_check(page->data, page_size, 1, file);
 }
@@ -281,7 +286,7 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     if (offset != 0) {
         fseek(file, offset, SEEK_SET);
     } else {
-        fputs("pid doesn't exist\n",stderr);
+        fputs("pid doesn't exist\n", stderr);
         return -1;
     }
     return 0;
