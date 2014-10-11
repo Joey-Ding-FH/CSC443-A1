@@ -7,12 +7,17 @@ using namespace std;
 
 typedef const char* V;
 typedef vector<V> Record;
+<<<<<<< Updated upstream
 typedef int PageID;
+=======
+typedef vector<char> ByteArray;
+>>>>>>> Stashed changes
 
 typedef struct {
     void *data;
     int page_size;
     int slot_size;
+    ByteArray *slot_info; //byte array to store info about slots: 0 if free 1 if not
 } Page;
 
 typedef struct {
