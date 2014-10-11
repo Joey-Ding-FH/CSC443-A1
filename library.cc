@@ -5,11 +5,6 @@
 #include <math.h>
 #include "library.h"
 
-#define SLOT_SIZE 1000
-#define OFFSET_SIZE sizeof(uint32_t)
-#define ATTRIBUTE_SIZE 10
-#define RECORD_SIZE 1000
-
 int get_entry_size(int page_size);
 int get_free_space_size(int page_size);
 int get_number_of_pages(int page_size);
@@ -39,7 +34,7 @@ void fixed_len_write(Record *record, void *buf) {
 		for (const char *i = *it; *i != '\0'; i++) {
 			*(char*)buf = *i;
 			buf = ((char*)buf) + 1;
-    		}
+    	}
 	}
 }
 
@@ -75,7 +70,7 @@ void fixed_len_read(void *buf, int size, Record *record) {
             cout << total_size_read << endl;
     		memset(temp, '\0', ATTRIBUTE_SIZE);
         }
-		}
+	}
 	free(temp);
 }
 

@@ -5,13 +5,16 @@
 
 using namespace std;
 
+#define SLOT_SIZE 1000
+#define OFFSET_SIZE sizeof(uint32_t)
+#define ATTRIBUTE_SIZE 10
+#define RECORD_SIZE 1000
+
+
 typedef const char* V;
 typedef vector<V> Record;
-<<<<<<< Updated upstream
 typedef int PageID;
-=======
 typedef vector<char> ByteArray;
->>>>>>> Stashed changes
 
 typedef struct {
     void *data;
