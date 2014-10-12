@@ -7,3 +7,9 @@ library.o: library.cc library.h
 
 csv2heapfile: csv2heapfile.cc library.o
 	$(CC) -o $@ $< library.o
+
+csv2colstore: csv2colstore.cc library.o
+	$(CC) -o $@ $< library.o
+
+clean:
+	rm -f csv2colstore *.o
