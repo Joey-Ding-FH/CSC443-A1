@@ -1,6 +1,5 @@
 #include <iostream>
 #include <iterator>
-#include <assert.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include "library.h"
@@ -8,7 +7,11 @@
 int main(int argc, char *argv[])
 {
 
-	assert(argc == 4);
+	if (argc != 4)
+	{
+		fprintf(stderr, "");
+		exit(1);
+	}
 	//USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
 
 
@@ -72,9 +75,9 @@ int main(int argc, char *argv[])
 	// (make sure slot_size is only size of 1 attribute)
 	// when page is full write out to disk, replace entry in page array...? 
 
-	int numBytesRead = 0; //keep track of much we read
-	int attrInd = 0; //index of current attribute being read
-	char *buf; //temporary buffer for reading
+	int numBytesRead = 0; 
+	int attrInd = 0; //index/"attributeID"
+	char *buf; 
 
 	while (!feof(csvfile))
 	{
@@ -100,9 +103,21 @@ int main(int argc, char *argv[])
 			workingPageIDs[attrInd] = newPageId;
 
 			free(curPage);
+			fseek(csvfile, 1, SEEK_CUR); //skip either the comma or newline char
 		}
 
 		attrInd = (attrInd + 1) % ATTR_PER_RECORD;
+	}
+
+
+	//cleanup: write all the pages and close all the files
+	for (int i = 0; i < ATTR_PER_RECORD; i++)
+	{
+		Page *curPage = &workingPages[i];
+		Heapfile *curFile = &attributeFiles[i];
+		write_page(curPage, curFile, workingPageIDs[i]);
+		fclose(curFile->file_ptr);
+
 	}
 
 	return 0;
