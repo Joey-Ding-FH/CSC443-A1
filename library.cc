@@ -210,12 +210,14 @@ PageID alloc_page(Heapfile *heapfile) {
 void read_page(Heapfile *heapfile, PageID pid, Page *page) {
     int page_size = heapfile->page_size;
     FILE *file = heapfile->file_ptr;
-
     if (reach_page(heapfile, pid) == -1) {
         return;
     }
-
     page->data = malloc(page_size);
+    if (page->data == NULL) {
+        fputs("Memory error\n", stderr); 
+        exit(2);
+    }
 
     fread_with_check(page, sizeof(Page), 1, file);
     fread_with_check(page->data, page_size, 1, file);
@@ -255,6 +257,29 @@ void read_csv2page(ifstream *file, Page *page) {
     }
 }
 
+/**
+ * Scan all records in heapfile using the given page_size.
+ */
+void scan(char *heapfile_name, int page_size) {
+    Heapfile *heapfile = new Heapfile;
+    heapfile->page_size = page_size;
+    heapfile->file_ptr = fopen(heapfile_name, "rb");
+    if (heapfile->file_ptr == NULL) {
+        fputs("heap file doesn't exist.\n", stderr);
+        exit(2);
+    }
+
+    RecordIterator *i = new RecordIterator(heapfile);
+    while (i->hasNext()) {
+        char *buf = (char *) malloc(SLOT_SIZE);
+        Record record = i->next();
+        fixed_len_write(&record, buf);
+        cout << buf << endl;
+    }
+    fflush(heapfile->file_ptr);
+    fclose(heapfile->file_ptr);
+}
+
 RecordIterator::RecordIterator(Heapfile *hFile) {
     heapfile = hFile;
 
@@ -264,7 +289,7 @@ RecordIterator::RecordIterator(Heapfile *hFile) {
 }
 
 Record RecordIterator::next() {
-    Page *page = new Page();
+    Page *page = new Page;
 
     read_page(heapfile, cur_rid->page_id, page);
     Record *record = new Record();

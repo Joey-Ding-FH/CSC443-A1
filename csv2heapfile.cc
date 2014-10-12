@@ -49,7 +49,11 @@ int main(int argc, char *argv[]) {
         pid++;
     }
 
+    fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
+    file.close();
+
+    scan(heapfile_name, page_size);
 }
 
 void check_argv(int argc, char *argv[]) {

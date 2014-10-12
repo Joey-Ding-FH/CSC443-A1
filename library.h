@@ -109,6 +109,11 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
  */
 void read_csv2page(ifstream *file, Page *page);
 
+/**
+ * Scan all records in heapfile using the given page_size.
+ */
+void scan(char *heapfile_name, int page_size);
+
 class RecordIterator {
     private:
         Heapfile *heapfile;
