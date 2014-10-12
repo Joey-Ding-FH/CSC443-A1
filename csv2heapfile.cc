@@ -49,14 +49,6 @@ int main(int argc, char *argv[]) {
         pid++;
     }
 
-    RecordIterator *i = new RecordIterator(heapfile);
-    while (i->hasNext()) {
-        char *buf = (char *) malloc(SLOT_SIZE);
-        Record record = i->next();
-        fixed_len_write(&record, buf);
-        cout << buf << endl;
-    }
-
     fclose(heapfile->file_ptr);
 }
 
