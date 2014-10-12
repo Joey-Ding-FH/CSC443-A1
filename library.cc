@@ -20,6 +20,7 @@ uint32_t alloc_page_at_end(FILE *file, int page_size);
 int reach_page(Heapfile *heapfile, PageID pid);
 void fixed_len_read(void *buf, int numer_of_slot, ByteArray *slot_info);
 void fixed_len_write(ByteArray *slot_info, void *buf);
+uint32_t read_offset(FILE *file);
 
 /**
  * Compute the number of bytes required to serialize record
@@ -269,31 +270,6 @@ void read_csv2page(ifstream *file, Page *page) {
 
         add_fixed_len_page(page, record);
     }
-}
-
-/**
- * Scan all records in heapfile using the given page_size.
- */
-void scan(char *heapfile_name, int page_size) {
-    Heapfile *heapfile = new Heapfile;
-    heapfile->page_size = page_size;
-    heapfile->file_ptr = fopen(heapfile_name, "rb");
-    if (heapfile->file_ptr == NULL) {
-        fputs("heap file doesn't exist.\n", stderr);
-        exit(2);
-    }
-
-    RecordIterator *i = new RecordIterator(heapfile);
-    while (i->hasNext()) {
-        char *buf = (char *) malloc(SLOT_SIZE);
-        Record record = i->next();
-        for (int i = 0; i < record.size(); i++) {
-            cout << record.at(i) << ", ";
-        }
-        cout << endl;
-    }
-    fflush(heapfile->file_ptr);
-    fclose(heapfile->file_ptr);
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {

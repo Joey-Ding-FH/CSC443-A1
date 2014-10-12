@@ -91,9 +91,6 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
  */
 PageID alloc_page(Heapfile *heapfile);
 
-// TODO - delete this.
-uint32_t read_offset(FILE *file);
-
 /**
  * Read a page into memory
  */
@@ -108,11 +105,6 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
  * Read lines in file into page. Return when page is full.
  */
 void read_csv2page(ifstream *file, Page *page);
-
-/**
- * Scan all records in heapfile using the given page_size.
- */
-void scan(char *heapfile_name, int page_size);
 
 class RecordIterator {
     private:
