@@ -117,7 +117,11 @@ void scan(char *heapfile_name, int page_size);
 class RecordIterator {
     private:
         Heapfile *heapfile;
+        int page_size;
+        Page *cur_page;
         RecordID *cur_rid;
+        bool has_next;
+        void find_next();
     public:
         RecordIterator(Heapfile *hFile);
         Record next();

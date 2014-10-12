@@ -18,6 +18,8 @@ size_t fwrite_with_check(const void *ptr, size_t size, size_t count, FILE *file)
 size_t fread_with_check(void *ptr, size_t size, size_t count, FILE *file);
 uint32_t alloc_page_at_end(FILE *file, int page_size);
 int reach_page(Heapfile *heapfile, PageID pid);
+void fixed_len_read(void *buf, int numer_of_slot, ByteArray *slot_info);
+void fixed_len_write(ByteArray *slot_info, void *buf);
 
 /**
  * Compute the number of bytes required to serialize record
@@ -43,6 +45,7 @@ void fixed_len_write(Record *record, void *buf) {
             pos++;
         }
 	}
+    *((char*) buf + pos) = '\0';
 }
 
 /**
@@ -135,8 +138,8 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
-	
 	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
+
 	fixed_len_read(buf, SLOT_SIZE, r);
 }
 
@@ -211,16 +214,23 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page) {
     int page_size = heapfile->page_size;
     FILE *file = heapfile->file_ptr;
     if (reach_page(heapfile, pid) == -1) {
+        page->data = NULL;
         return;
     }
+
+    fread_with_check(page, sizeof(Page), 1, file);
     page->data = malloc(page_size);
     if (page->data == NULL) {
         fputs("Memory error\n", stderr); 
         exit(2);
     }
+    char *slot_info = (char *) malloc(fixed_len_page_capacity(page) * sizeof(char));
 
-    fread_with_check(page, sizeof(Page), 1, file);
+    fread_with_check(slot_info, fixed_len_page_capacity(page) * sizeof(char), 1, file);
     fread_with_check(page->data, page_size, 1, file);
+
+    page->slot_info = new ByteArray;
+    fixed_len_read(slot_info, fixed_len_page_capacity(page) * sizeof(char), page->slot_info);
 }
 
 /**
@@ -231,10 +241,14 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid) {
     FILE *file = heapfile->file_ptr;
 
     if (reach_page(heapfile, pid) == -1) {
+        page->data = NULL;
         return;
     }
+    char *slot_info = (char *) malloc(fixed_len_page_capacity(page) * sizeof(char));
+    fixed_len_write(page->slot_info, slot_info);
 
     fwrite_with_check(page, sizeof(Page), 1, file);
+    fwrite_with_check(slot_info, fixed_len_page_capacity(page) * sizeof(char), 1, file);
     fwrite_with_check(page->data, page_size, 1, file);
 }
 
@@ -273,54 +287,67 @@ void scan(char *heapfile_name, int page_size) {
     while (i->hasNext()) {
         char *buf = (char *) malloc(SLOT_SIZE);
         Record record = i->next();
-        fixed_len_write(&record, buf);
-        cout << buf << endl;
+        for (int i = 0; i < record.size(); i++) {
+            cout << record.at(i) << ", ";
+        }
+        cout << endl;
     }
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {
+    page_size = hFile->page_size;
     heapfile = hFile;
 
     cur_rid = (RecordID*) malloc(sizeof(RecordID));
     cur_rid->page_id = 1;
     cur_rid->slot = 0;
+    has_next = true;
+
+    cur_page = new Page;
+    read_page(hFile, cur_rid->page_id, cur_page);
+
+    if (cur_page->data != NULL) {
+        find_next();
+    } else {
+        has_next = false;
+    }
 }
 
 Record RecordIterator::next() {
-    Page *page = new Page;
-
-    read_page(heapfile, cur_rid->page_id, page);
     Record *record = new Record();
-    read_fixed_len_page(page, cur_rid->slot, record);
+    read_fixed_len_page(cur_page, cur_rid->slot, record);
 
-    // TODO: Fix here use the byte array in page.
     cur_rid->slot++;
-    while (page->slot_info->at(cur_rid->slot - 1) == '0') {
-        cur_rid->slot++;
-        if (cur_rid->slot > fixed_len_page_capacity(page)) {
-            cur_rid->page_id++;
-            cur_rid->slot = 0;
-            break;
-        }
-    }
+    find_next();
 
     return *record;
 }
 
 bool RecordIterator::hasNext() {
-    Page *page = new Page();
+    return has_next;
+}
 
-    read_page(heapfile, cur_rid->page_id, page);
-    if (page->data == NULL) {
-        return false;
+void RecordIterator::find_next() {
+    while (cur_page->slot_info->at(cur_rid->slot) == '0') {
+        cur_rid->slot++;
+        if (cur_rid->slot >= fixed_len_page_capacity(cur_page)) {
+            
+            cur_rid->page_id++;
+            cur_rid->slot = 0;
+
+            free(cur_page->data);
+            cur_page = new Page;
+
+            read_page(heapfile, cur_rid->page_id, cur_page);
+
+            if (cur_page->data == NULL) {
+                has_next = false;
+                break;
+            }
+        }
     }
-
-    Record *record = new Record();
-    read_fixed_len_page(page, cur_rid->slot, record);
-
-    return record != NULL;
 }
 
 int reach_page(Heapfile *heapfile, PageID pid) {
@@ -362,7 +389,11 @@ uint32_t alloc_page_at_end(FILE *file, int page_size) {
     fseek (file, 0, SEEK_END);
     uint32_t offset = ftell(file);
 
+    char *slot_info = (char *) malloc(fixed_len_page_capacity(new_page) * sizeof(char));
+    fixed_len_write(new_page->slot_info, slot_info);
+
     fwrite_with_check(new_page, sizeof(Page), 1, file);
+    fwrite_with_check(slot_info, fixed_len_page_capacity(new_page) * sizeof(char), 1, file);
     fwrite_with_check(new_page->data, page_size, 1, file);
 
     free(new_page->data);
@@ -418,3 +449,14 @@ uint32_t read_offset(FILE *file) {
     return result;
 }
 
+void fixed_len_read(void *buf, int numer_of_slot, ByteArray *slot_info) {
+    for (int i = 0; i < numer_of_slot; i++) {
+        slot_info->push_back(*((char *) buf + i));
+    }
+}
+
+void fixed_len_write(ByteArray *slot_info, void *buf) {
+    for (int i = 0; i < slot_info->size(); i++) {
+        *((char*) buf + i) = slot_info->at(i);
+    }
+}

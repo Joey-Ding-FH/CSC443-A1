@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     }
     ifstream file(csv_file);
     int pid = 1;
-
+    
     while (!file.eof()) {
         alloc_page(heapfile);
         Page *page = (Page *) malloc(sizeof(Page));
@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     file.close();
-
-    scan(heapfile_name, page_size);
 }
 
 void check_argv(int argc, char *argv[]) {
