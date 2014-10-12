@@ -5,14 +5,21 @@
 
 using namespace std;
 
+#define OFFSET_SIZE sizeof(uint32_t)
+#define ATTRIBUTE_SIZE 10
+#define ATTR_PER_RECORD 4
+#define SLOT_SIZE ATTRIBUTE_SIZE * ATTR_PER_RECORD
+
 typedef const char* V;
 typedef vector<V> Record;
 typedef int PageID;
+typedef vector<char> ByteArray;
 
 typedef struct {
     void *data;
     int page_size;
     int slot_size;
+    ByteArray *slot_info; //byte array to store info about slots: 0 if free 1 if not
 } Page;
 
 typedef struct {
@@ -96,6 +103,11 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page);
  * Write a page from memory to disk
  */
 void write_page(Page *page, Heapfile *heapfile, PageID pid);
+
+/**
+ * Read lines in file into page. Return when page is full.
+ */
+void read_csv2page(ifstream *file, Page *page);
 
 class RecordIterator {
     private:

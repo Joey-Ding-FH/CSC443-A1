@@ -1,15 +1,15 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <stdio.h>
+#include <stdlib.h>
 #include <iterator>
-#include <assert.h>
 #include <math.h>
+#include <assert.h>
 #include "library.h"
 
-#define ATTRIBUTE_LENGTH 10
-#define BIT_SIZE 0.125
-#define ATTR_SIZE 10
-#define ATTR_PER_RECORD 100
-#define SLOT_SIZE ATTR_SIZE * ATTR_PER_RECORD
-#define OFFSET_SIZE sizeof(uint32_t)
+using namespace std;
 
 int get_entry_size(int page_size);
 int get_free_space_size(int page_size);
@@ -23,78 +23,83 @@ int reach_page(Heapfile *heapfile, PageID pid);
  * Compute the number of bytes required to serialize record
  */
 int fixed_len_sizeof(Record *record) {
-    int result = 0;
+	int result = 0;
 
-    for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
-        result += strlen(*it) * sizeof(char);
-    }
+	for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
+		result += strlen(*it) * sizeof(char);
+	}
 
-    return result;
+	return result;
 }
 
 /**
  * Serialize the record to a byte array to be stored in buf.
  */
 void fixed_len_write(Record *record, void *buf) {
-    for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
+    int pos = 0;
+	for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
         for (const char *i = *it; *i != '\0'; i++) {
-                *(char*)buf = *i;
-                buf = ((char*)buf) + 1;
-            }
-    }
+            *((char*) buf + pos) = *i;
+            pos++;
+        }
+	}
 }
 
 /**
  * Deserializes `size` bytes from the buffer, `buf`, and
  * stores the record in `record`.
+ * Read attribute by attribute, since we are not assuming anything about what size is and whose multiple it could be of
  */
 void fixed_len_read(void *buf, int size, Record *record) {
-    int total_size_read = 0;
-    char *temp = (char *) malloc(ATTRIBUTE_LENGTH);
-    int pos = 0;
+	assert(size >= ATTRIBUTE_SIZE); //at least one attribute is being read
 
-    while (total_size_read < size && *(((char *)buf) + total_size_read) != '\0') {
-        *(temp + pos) = *(((char *)buf) + total_size_read);
-        total_size_read++;
-        pos++;
-        if (pos == ATTRIBUTE_LENGTH) {
-            pos = 0;
-            record->push_back(temp);
-            temp = (char *) malloc(ATTRIBUTE_LENGTH); //this looks bad, why are you allocating more memory? 
-                                  //can't you just reuse the same temp?
-        }
-    } //also you didn't call free, so temp will cause a memory leak..
+	while (size >= ATTRIBUTE_SIZE){
+        char *temp = (char *) malloc(ATTRIBUTE_SIZE + 1);
+        memset(temp, '\0', ATTRIBUTE_SIZE + 1);
+        strncpy(temp, (char *)buf, ATTRIBUTE_SIZE);
+        record->push_back(temp);
 
+        size -= ATTRIBUTE_SIZE;
+        buf = ((char*)buf) + ATTRIBUTE_SIZE;
+	}
 }
 
 /**
  * Initializes a page using the given slot size
  */
 void init_fixed_len_page(Page *page, int page_size, int slot_size) {
-    assert(slot_size <= page_size);
+	assert(slot_size <= page_size);
 
-    page->data = malloc(page_size);
-    page->page_size = page_size;
-    page->slot_size = slot_size;
+	page->data = malloc(page_size);
+	page->page_size = page_size;
+	page->slot_size = slot_size;
+	page->slot_info = new ByteArray;
+
+	int num_slots = fixed_len_page_capacity(page);
+	for (int i = 0; i < num_slots; i++)
+		page->slot_info->push_back('0');
 }
 
 /**
- * Calculates the maximal number of records that fit in a page
+ * Calculates the maximal number of records/slots that fit in a page
  */
 int fixed_len_page_capacity(Page *page) {
-    int page_size = page->page_size;
-    int slot_size = page->slot_size;
-
-    return (page_size - sizeof(int)) / (slot_size + BIT_SIZE); //???
+	return (page->page_size / page->slot_size);
 }
-
 
 /**
  * Calculate the free space (number of free slots) in the page
  */
 int fixed_len_page_freeslots(Page *page) {
-    
-    return -1;
+	
+	int num_free = 0;
+	//std::vector<char>::iterator it;
+	for (int i = 0; i < page->slot_info->size(); i++){
+		if (page->slot_info->at(i) == '0')
+			num_free++;
+	}
+
+	return num_free; 
 }
  
 /**
@@ -104,22 +109,35 @@ int fixed_len_page_freeslots(Page *page) {
  *   -1 if unsuccessful (page full)
  */
 int add_fixed_len_page(Page *page, Record *r){
-    
-    return -1;
+	int free_slots = fixed_len_page_freeslots(page);
+	if (free_slots > 0) {
+		for (int ind = 0; ind < page->slot_info->size(); ind++){
+			if (page->slot_info->at(ind) == '0'){
+				write_fixed_len_page(page, ind, r);
+                page->slot_info->at(ind) = '1';
+				return ind;
+			}
+		}
+	
+	}
+	return -1;
 }
  
 /**
  * Write a record into a given slot.
  */
 void write_fixed_len_page(Page *page, int slot, Record *r){
-    
+	char *buf = ((char *)page->data + (slot * SLOT_SIZE));
+	fixed_len_write(r, buf);
 }
  
 /**
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
-    
+	
+	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
+	fixed_len_read(buf, SLOT_SIZE, r);
 }
 
 
@@ -214,10 +232,27 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid) {
         return;
     }
 
-    // TODO: Update entry in dir page.
+    fwrite_with_check(page, sizeof(Page), 1, file);
+    fwrite_with_check(page->data, page_size, 1, file);
+}
 
-    fread_with_check(page, sizeof(Page), 1, file);
-    fread_with_check(page->data, page_size, 1, file);
+/**
+ * Read lines in file into page. Return when page is full.
+ */
+void read_csv2page(ifstream *file, Page *page) {
+    int free_space = fixed_len_page_freeslots(page);
+    char chars_to_remove[] = ",\"";
+    string line;
+
+    for(;free_space > 0 && getline(*file, line); free_space--) {
+        for (int i = 0; i < strlen(chars_to_remove); ++i) {
+            line.erase(remove(line.begin(), line.end(), chars_to_remove[i]), line.end());
+        }
+        Record *record = new Record;
+        fixed_len_read((void *) line.c_str(), SLOT_SIZE, record);
+
+        add_fixed_len_page(page, record);
+    }
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {
@@ -225,7 +260,7 @@ RecordIterator::RecordIterator(Heapfile *hFile) {
 
     cur_rid = (RecordID*) malloc(sizeof(RecordID));
     cur_rid->page_id = 1;
-    cur_rid->slot = 1;
+    cur_rid->slot = 0;
 }
 
 Record RecordIterator::next() {
@@ -235,11 +270,15 @@ Record RecordIterator::next() {
     Record *record = new Record();
     read_fixed_len_page(page, cur_rid->slot, record);
 
-    if (cur_rid->slot >= fixed_len_page_capacity(page) - fixed_len_page_freeslots(page)) {
-        cur_rid->page_id++;
-        cur_rid->slot = 1;
-    } else {
+    // TODO: Fix here use the byte array in page.
+    cur_rid->slot++;
+    while (page->slot_info->at(cur_rid->slot - 1) == '0') {
         cur_rid->slot++;
+        if (cur_rid->slot > fixed_len_page_capacity(page)) {
+            cur_rid->page_id++;
+            cur_rid->slot = 0;
+            break;
+        }
     }
 
     return *record;
@@ -273,7 +312,6 @@ int reach_page(Heapfile *heapfile, PageID pid) {
         fseek(file, sizeof(Page), SEEK_CUR);
         uint32_t next_dir_offset = read_offset(file);
         if (next_dir_offset == 0) {
-            fputs("pid doesn't exist\n",stderr);
             return -1;
         }
         fseek(file, next_dir_offset, SEEK_SET);
@@ -286,7 +324,6 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     if (offset != 0) {
         fseek(file, offset, SEEK_SET);
     } else {
-        fputs("pid doesn't exist\n", stderr);
         return -1;
     }
     return 0;
@@ -341,7 +378,7 @@ int get_number_of_pages(int page_size) {
 uint32_t read_offset(FILE *file) {
     uint32_t *buffer = (uint32_t *) malloc(OFFSET_SIZE);
     if (buffer == NULL) {
-        fputs("Memory error\n",stderr); 
+        fputs("Memory error\n", stderr); 
         exit(2);
     }
 
