@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	outfile.open(fileName);
 
 	int lineCount = 0;
-	while (lineCount <= numLines)
+	while (lineCount < numLines)
 	{
 		for (int i = 0; i < ATTR_PER_RECORD; i++)
 		{
