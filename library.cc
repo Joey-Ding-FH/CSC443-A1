@@ -299,7 +299,9 @@ void read_attr(Record *record, int attr_id, void *buf) {
 
     assert(strlen(value) == ATTRIBUTE_SIZE);
 
-    record->at(attr_id) = value;
+    for (int i = 0; i < ATTRIBUTE_SIZE; i++) {
+        *((char *) record->at(attr_id) + i)  = *(value + i);
+    }
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {
