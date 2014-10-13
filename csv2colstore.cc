@@ -2,6 +2,7 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "library.h"
 
 int main(int argc, char *argv[])
@@ -9,16 +10,11 @@ int main(int argc, char *argv[])
 
 	if (argc != 4)
 	{
-		fprintf(stderr, "");
+		fprintf(stderr, "USAGE: csv2colstore <csv_file> <colstore_name>"
+			"<pagesize>");
 		exit(1);
 	}
 	//USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
-
-
-	//1. open the file
-	//2. make some heap files?
-	//3. make a directory to put all these heap files (in a loop)
-	//4. read the file...
 
 	FILE *csvfile = fopen(argv[1], "rb");
 
@@ -30,7 +26,7 @@ int main(int argc, char *argv[])
 
 	if (mkdir(argv[2], S_IRWXU | S_IRWXG | S_IROTH) == -1)
 	{
-		if (errno != EEXIST) { //if directory exists, swallow exception keep going
+		if (errno != EEXIST) { //if directory exists, swallow exception
 			fprintf(stderr, "Could not create storage directory: %s", argv[2]);
 			exit(1);
 		}
@@ -54,7 +50,7 @@ int main(int argc, char *argv[])
 	for (int i = 0 ; i < ATTR_PER_RECORD; i++)
 	{
 		sprintf(filename, "%d", i);
-		FILE *file = fopen(filename, "w"); //probably won't compile : /
+		FILE *file = fopen(filename, "wb"); 
 		Heapfile *hpFile = new Heapfile();
 		init_heapfile(hpFile, pageSize, file);
 
@@ -116,6 +112,8 @@ int main(int argc, char *argv[])
 		Page *curPage = &workingPages[i];
 		Heapfile *curFile = &attributeFiles[i];
 		write_page(curPage, curFile, workingPageIDs[i]);
+
+		fflush(curFile->file_ptr);
 		fclose(curFile->file_ptr);
 
 	}

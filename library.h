@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstring>
+#include <stdio.h>
 
 using namespace std;
 
@@ -105,7 +106,15 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
 /**
  * Read lines in file into page. Return when page is full.
  */
-void read_csv2page(ifstream *file, Page *page);
+int read_csv2page(ifstream *file, Page *page);
+
+/*
+ * Helper functions to read/write byte array into buf..
+ */
+void read_bytes(void *buf, int numSlots, ByteArray *slot_info);
+
+void write_bytes(ByteArray *slot_info, void *buf);
+
 
 /**
  * Write attribute from record into buf.
@@ -122,13 +131,13 @@ class RecordIterator {
         Heapfile *heapfile;
         int page_size;
         Page *cur_page;
-        RecordID *cur_rid;
         bool has_next;
         void find_next();
     public:
         RecordIterator(Heapfile *hFile);
         Record next();
         bool hasNext();
+	RecordID *cur_rid;
 };
  
 #endif
