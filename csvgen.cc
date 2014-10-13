@@ -38,10 +38,10 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < ATTR_PER_RECORD; i++)
 		{
 			std::string buf(ATTRIBUTE_SIZE, '\0');
-			for (int i = 0; i < ATTRIBUTE_SIZE; i++)
+			for (int j = 0; j < ATTRIBUTE_SIZE; j++)
 			{
 				char randc = (rand() % (endRange - startRange)) + startRange;
-				buf.replace(i, 1, 1, randc);
+				buf.replace(j, 1, 1, randc);
 			}
 
 			outfile.write(buf.c_str(), ATTRIBUTE_SIZE);
