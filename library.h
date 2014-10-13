@@ -137,7 +137,7 @@ class RecordIterator {
         RecordIterator(Heapfile *hFile);
         Record next();
         bool hasNext();
-	RecordID *cur_rid;
+        RecordID *cur_rid;
 };
  
 #endif

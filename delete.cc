@@ -16,12 +16,9 @@ int main(int argc, char *argv[]) {
     check_argv(argc, argv);
 
     char *heapfile_name = argv[1];
-
     int pid = atoi(strtok(argv2, "-"));
     int slot = atoi(strtok(NULL, "-"));
-    int attr_id = atoi(argv[3]);
-    char *new_value = argv[4];
-    int page_size = atoi(argv[5]);
+    int page_size = atoi(argv[3]);
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
@@ -35,25 +32,19 @@ int main(int argc, char *argv[]) {
     Page *page = new Page;
     read_page(heapfile, pid, page);
 
-    Record *record = new Record;
-    read_fixed_len_page(page, slot, record);
-
-    read_attr(record, attr_id, new_value);
-
-    write_fixed_len_page(page, slot, record);
+    page->slot_info->at(slot) = '0';
 
     write_page(page, heapfile, pid);
 
     delete page;
-    delete record;
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     free(argv2);
 }
 
 void check_argv(int argc, char *argv[]) {
-    if(argc != 6) {
-        fputs("usage: update <heapfile> <page_id>-<slot> <attribute_id> <new_value> <page_size>\n",stderr);
+    if(argc != 4) {
+        fputs("usage: delete <heapfile> <page_id>-<slot> <attribute_id> <new_value> <page_size>\n",stderr);
         exit(2);
     }
 
@@ -69,17 +60,7 @@ void check_argv(int argc, char *argv[]) {
         exit(2);
     }
 
-    if ((atoi(slot) <= 0) && !(strcmp(slot, "0") == 0)) {
-        fputs("usage: <slot> must be integer and greater than or equal to zero\n",stderr);
-        exit(2);
-    }
-
-    if ((atoi(argv[3]) <= 0 or atoi(argv[3]) >= ATTR_PER_RECORD) && !(strcmp(argv[3], "0") == 0)) {
-        fprintf(stderr, "usage: <attribute_id> must be integer and greater than or equal to zero and smaller than number of attribute which is %d \n", ATTR_PER_RECORD);
-        exit(2);
-    }
-
-    if (atoi(argv[5]) <= 0) {
+    if (atoi(argv[3]) <= 0) {
         fputs("usage: <page_size> must be integer and greater than zero\n",stderr);
         exit(2);
     }
