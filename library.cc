@@ -45,7 +45,6 @@ void fixed_len_write(Record *record, void *buf) {
             pos++;
         }
 	}
-    *((char*) buf + pos) = '\0';
 }
 
 /**
@@ -290,6 +289,17 @@ void write_attr(Record *record, int attr_id, void *buf) {
     }
 
     free(r);
+}
+
+/**
+ * Read attribute from buf into record.
+ */
+void read_attr(Record *record, int attr_id, void *buf) {
+    char *value = (char *) buf;
+
+    assert(strlen(value) == ATTRIBUTE_SIZE);
+
+    record->at(attr_id) = value;
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {

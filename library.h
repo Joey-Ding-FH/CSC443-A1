@@ -121,6 +121,11 @@ void write_bytes(ByteArray *slot_info, void *buf);
  */
 void write_attr(Record *record, int attr_id, void *buf);
 
+/**
+ * Read attribute from buf into record.
+ */
+void read_attr(Record *record, int attr_id, void *buf);
+
 class RecordIterator {
     private:
         Heapfile *heapfile;

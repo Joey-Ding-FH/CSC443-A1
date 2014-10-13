@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
@@ -12,19 +13,11 @@ using namespace std;
 void check_argv(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
-    char *csv_file;
-    char *heapfile_name;
-    int page_size;
-
     check_argv(argc, argv);
 
-    heapfile_name = (char *) malloc(sizeof(char) * strlen(argv[1]));
-    strcpy(heapfile_name, argv[1]);
-
-    csv_file = (char *) malloc(sizeof(char) * strlen(argv[2]));
-    strcpy(csv_file, argv[2]);
-
-    page_size = atoi(argv[3]);
+    char *heapfile_name = argv[1];
+    char *csv_file = argv[2];
+    int page_size = atoi(argv[3]);
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
@@ -80,8 +73,6 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     file.close();
-    free(heapfile_name);
-    free(csv_file);
 }
 
 void check_argv(int argc, char *argv[]) {
