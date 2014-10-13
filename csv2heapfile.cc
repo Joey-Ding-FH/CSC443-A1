@@ -4,6 +4,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 #include "library.h"
 
 using namespace std;

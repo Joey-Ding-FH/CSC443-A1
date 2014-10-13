@@ -2,6 +2,8 @@
 #define LIBRARY_H
 
 #include <vector>
+#include <cstring>
+#include <algorithm>
 
 using namespace std;
 
