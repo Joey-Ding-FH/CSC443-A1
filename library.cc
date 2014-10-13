@@ -5,8 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iterator>
+#include <cstring>
+#include <algorithm>
 #include <math.h>
 #include <assert.h>
+#include <stdint.h>
 #include "library.h"
 
 using namespace std;
