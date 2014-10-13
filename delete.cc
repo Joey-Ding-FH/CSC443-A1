@@ -31,7 +31,15 @@ int main(int argc, char *argv[]) {
 
     Page *page = new Page;
     read_page(heapfile, pid, page);
+    if (page->data == NULL) {
+        fputs("record with <record_id> doesn't exist.\n", stderr);
+        exit(2);
+    }
 
+    if (slot >= fixed_len_page_capacity(page)) {
+        fputs("record with <record_id> doesn't exist.\n", stderr);
+        exit(2);
+    }
     page->slot_info->at(slot) = '0';
 
     write_page(page, heapfile, pid);

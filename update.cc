@@ -44,9 +44,17 @@ int main(int argc, char *argv[]) {
 
     Page *page = new Page;
     read_page(heapfile, pid, page);
+    if (page->data == NULL) {
+        fputs("record with <record_id> doesn't exist.\n", stderr);
+        exit(2);
+    }
 
     Record *record = new Record;
     read_fixed_len_page(page, slot, record);
+    if (record->empty()) {
+        fputs("record with <record_id> doesn't exist.\n", stderr);
+        exit(2);
+    }
 
     read_attr(record, attr_id, update_value);
 

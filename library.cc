@@ -137,8 +137,7 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
-
-    if (page->slot_info->at(slot) == '0')
+    if (page->slot_info->at(slot) == '0' || slot >= fixed_len_page_capacity(page))
         return;
     
 	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
@@ -299,9 +298,7 @@ void read_attr(Record *record, int attr_id, void *buf) {
 
     assert(strlen(value) == ATTRIBUTE_SIZE);
 
-    for (int i = 0; i < ATTRIBUTE_SIZE; i++) {
-        *((char *) record->at(attr_id) + i)  = *(value + i);
-    }
+    record->at(attr_id) = value;
 }
 
 RecordIterator::RecordIterator(Heapfile *hFile) {
