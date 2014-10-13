@@ -23,6 +23,16 @@ int main(int argc, char *argv[]) {
     char *new_value = argv[4];
     int page_size = atoi(argv[5]);
 
+    char *update_value = (char *) malloc(ATTRIBUTE_SIZE + 1);
+    for (int i = 0; i < ATTRIBUTE_SIZE; i++) {
+        if (i < strlen(new_value)) {
+            *(update_value + i) = *(new_value + i);
+        } else {
+            *(update_value + i) = ' ';
+        }
+    }
+    *(update_value + ATTRIBUTE_SIZE) = '\0';
+
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
     heapfile->page_size = page_size;
@@ -38,7 +48,7 @@ int main(int argc, char *argv[]) {
     Record *record = new Record;
     read_fixed_len_page(page, slot, record);
 
-    read_attr(record, attr_id, new_value);
+    read_attr(record, attr_id, update_value);
 
     write_fixed_len_page(page, slot, record);
 
@@ -76,6 +86,11 @@ void check_argv(int argc, char *argv[]) {
 
     if ((atoi(argv[3]) <= 0 or atoi(argv[3]) >= ATTR_PER_RECORD) && !(strcmp(argv[3], "0") == 0)) {
         fprintf(stderr, "usage: <attribute_id> must be integer and greater than or equal to zero and smaller than number of attribute which is %d \n", ATTR_PER_RECORD);
+        exit(2);
+    }
+
+    if (strlen(argv[4]) >= ATTRIBUTE_SIZE) {
+        fprintf(stderr, "usage: length of <new_value> must less than or equal to %d \n", ATTRIBUTE_SIZE);
         exit(2);
     }
 

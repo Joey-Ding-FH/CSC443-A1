@@ -44,8 +44,10 @@ void scan(char *heapfile_name, int page_size) {
         exit(2);
     }
 
+    uint32_t count = 0;
     RecordIterator *i = new RecordIterator(heapfile);
     while (i->hasNext()) {
+        count++;
         char *buf = (char *) malloc(SLOT_SIZE);
         cout << "pageID " << i->cur_rid->page_id;
         cout << ", slot " << i->cur_rid->slot << ": ";
@@ -58,6 +60,7 @@ void scan(char *heapfile_name, int page_size) {
         }
         cout << endl;
     }
+    cout << "Total number of records: " << count << endl;
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
 }
