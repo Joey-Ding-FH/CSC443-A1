@@ -21,8 +21,6 @@ size_t fwrite_with_check(const void *ptr, size_t size, size_t count, FILE *file)
 size_t fread_with_check(void *ptr, size_t size, size_t count, FILE *file);
 uint32_t alloc_page_at_end(FILE *file, int page_size);
 int reach_page(Heapfile *heapfile, PageID pid);
-void fixed_len_read(void *buf, int numer_of_slot, ByteArray *slot_info);
-void fixed_len_write(ByteArray *slot_info, void *buf);
 uint32_t read_offset(FILE *file);
 
 /**
@@ -142,8 +140,11 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
-	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
 
+    if (page->slot_info->at(slot) == '0')
+        return;
+    
+	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
 	fixed_len_read(buf, SLOT_SIZE, r);
 }
 
@@ -234,7 +235,7 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page) {
     fread_with_check(page->data, page_size, 1, file);
 
     page->slot_info = new ByteArray;
-    fixed_len_read(slot_info, fixed_len_page_capacity(page) * sizeof(char), page->slot_info);
+    read_bytes(slot_info, fixed_len_page_capacity(page) * sizeof(char), page->slot_info);
 }
 
 /**
@@ -249,7 +250,7 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid) {
         return;
     }
     char *slot_info = (char *) malloc(fixed_len_page_capacity(page) * sizeof(char));
-    fixed_len_write(page->slot_info, slot_info);
+    write_bytes(page->slot_info, slot_info);
 
     fwrite_with_check(page, sizeof(Page), 1, file);
     fwrite_with_check(slot_info, fixed_len_page_capacity(page) * sizeof(char), 1, file);
@@ -387,7 +388,7 @@ uint32_t alloc_page_at_end(FILE *file, int page_size) {
     uint32_t offset = ftell(file);
 
     char *slot_info = (char *) malloc(fixed_len_page_capacity(new_page) * sizeof(char));
-    fixed_len_write(new_page->slot_info, slot_info);
+    write_bytes(new_page->slot_info, slot_info);
 
     fwrite_with_check(new_page, sizeof(Page), 1, file);
     fwrite_with_check(slot_info, fixed_len_page_capacity(new_page) * sizeof(char), 1, file);
@@ -446,13 +447,13 @@ uint32_t read_offset(FILE *file) {
     return result;
 }
 
-void fixed_len_read(void *buf, int numer_of_slot, ByteArray *slot_info) {
-    for (int i = 0; i < numer_of_slot; i++) {
+void read_bytes(void *buf, int numSlots, ByteArray *slot_info) {
+    for (int i = 0; i < numSlots; i++) {
         slot_info->push_back(*((char *) buf + i));
     }
 }
 
-void fixed_len_write(ByteArray *slot_info, void *buf) {
+void write_bytes(ByteArray *slot_info, void *buf) {
     for (int i = 0; i < slot_info->size(); i++) {
         *((char*) buf + i) = slot_info->at(i);
     }

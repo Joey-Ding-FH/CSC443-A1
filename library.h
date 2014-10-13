@@ -108,6 +108,14 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
  */
 int read_csv2page(ifstream *file, Page *page);
 
+/*
+ * Helper functions to read/write byte array into buf..
+ */
+void read_bytes(void *buf, int numSlots, ByteArray *slot_info);
+
+void write_bytes(ByteArray *slot_info, void *buf);
+
+
 /**
  * Write attribute from record into buf.
  */
