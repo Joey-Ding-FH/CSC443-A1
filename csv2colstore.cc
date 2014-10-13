@@ -2,6 +2,7 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "library.h"
 
 int main(int argc, char *argv[])
