@@ -259,10 +259,11 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid) {
 /**
  * Read lines in file into page. Return when page is full.
  */
-void read_csv2page(ifstream *file, Page *page) {
+int read_csv2page(ifstream *file, Page *page) {
     int free_space = fixed_len_page_freeslots(page);
     char chars_to_remove[] = ",\"";
     string line;
+	int numRecs = 0;
 
     for(;free_space > 0 && getline(*file, line); free_space--) {
         for (int i = 0; i < strlen(chars_to_remove); ++i) {
@@ -272,7 +273,9 @@ void read_csv2page(ifstream *file, Page *page) {
         fixed_len_read((void *) line.c_str(), SLOT_SIZE, record);
 
         add_fixed_len_page(page, record);
+		numRecs++;
     }
+	return numRecs;
 }
 
 /**

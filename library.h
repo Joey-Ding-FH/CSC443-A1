@@ -106,7 +106,7 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
 /**
  * Read lines in file into page. Return when page is full.
  */
-void read_csv2page(ifstream *file, Page *page);
+int read_csv2page(ifstream *file, Page *page);
 
 /**
  * Write attribute from record into buf.
@@ -118,13 +118,13 @@ class RecordIterator {
         Heapfile *heapfile;
         int page_size;
         Page *cur_page;
-        RecordID *cur_rid;
         bool has_next;
         void find_next();
     public:
         RecordIterator(Heapfile *hFile);
         Record next();
         bool hasNext();
+	RecordID *cur_rid;
 };
  
 #endif
