@@ -12,19 +12,12 @@ void check_argv(int argc, char *argv[]);
 void scan(char *heapfile_name, int page_size);
 
 int main(int argc, char *argv[]) {
-    char *heapfile_name;
-    int page_size;
-
     check_argv(argc, argv);
 
-    heapfile_name = (char *) malloc(sizeof(char) * strlen(argv[2]));
-    strcpy(heapfile_name, argv[1]);
-
-    page_size = atoi(argv[2]);
+    char *heapfile_name = argv[1];
+    int page_size = atoi(argv[2]);
 
     scan(heapfile_name, page_size);
-
-    free(heapfile_name);
 }
 
 void check_argv(int argc, char *argv[]) {

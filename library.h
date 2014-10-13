@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <cstring>
-#include <algorithm>
 
 using namespace std;
 
@@ -112,6 +111,11 @@ void read_csv2page(ifstream *file, Page *page);
  * Write attribute from record into buf.
  */
 void write_attr(Record *record, int attr_id, void *buf);
+
+/**
+ * Read attribute from buf into record.
+ */
+void read_attr(Record *record, int attr_id, void *buf);
 
 class RecordIterator {
     private:

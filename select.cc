@@ -12,24 +12,13 @@ void check_argv(int argc, char *argv[]);
 void select(char *heapfile_name, int page_size, int attr_id, char *start, char *end);
 
 int main(int argc, char *argv[]) {
-    char *heapfile_name;
-    int attr_id;
-    char *start;
-    char *end;
-    int page_size;
-
     check_argv(argc, argv);
 
-    heapfile_name = (char *) malloc(sizeof(char) * strlen(argv[1]));
-    strcpy(heapfile_name, argv[1]);
-
-    attr_id = atoi(argv[2]);
-
-    start = (char *) malloc(sizeof(char) * strlen(argv[3]));
-    strcpy(start, argv[3]);
-
-    end = (char *) malloc(sizeof(char) * strlen(argv[4]));
-    strcpy(end, argv[4]);
+    char *heapfile_name = argv[1];
+    int attr_id = atoi(argv[2]);
+    char *start = argv[3];
+    char *end = argv[4];
+    int page_size = atoi(argv[5]);
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
@@ -40,13 +29,7 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
-    page_size = atoi(argv[5]);
-
     select(heapfile_name, page_size, attr_id, start, end);
-
-    free(heapfile_name);
-    free(start);
-    free(end);
 }
 
 void check_argv(int argc, char *argv[]) {
@@ -55,8 +38,8 @@ void check_argv(int argc, char *argv[]) {
         exit(2);
     }
 
-    if (atoi(argv[2]) <= 0 or atoi(argv[2]) >= ATTR_PER_RECORD) {
-        fprintf(stderr, "usage: <attribute_id> must be integer and greater than zero and smaller than number of attribute which is %d \n", ATTR_PER_RECORD);
+    if ((atoi(argv[2]) <= 0 or atoi(argv[2]) >= ATTR_PER_RECORD) && !(strcmp(argv[2], "0") == 0)) {
+        fprintf(stderr, "usage: <attribute_id> must be integer and greater or equal to zero and smaller than number of attribute which is %d \n", ATTR_PER_RECORD);
         exit(2);
     }
 
