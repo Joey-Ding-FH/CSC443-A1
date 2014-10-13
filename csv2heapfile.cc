@@ -52,6 +52,8 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     file.close();
+    free(heapfile_name);
+    free(csv_file);
 }
 
 void check_argv(int argc, char *argv[]) {

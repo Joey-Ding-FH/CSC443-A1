@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
     page_size = atoi(argv[2]);
 
     scan(heapfile_name, page_size);
+
+    free(heapfile_name);
 }
 
 void check_argv(int argc, char *argv[]) {

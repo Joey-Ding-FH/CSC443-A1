@@ -272,6 +272,21 @@ void read_csv2page(ifstream *file, Page *page) {
     }
 }
 
+/**
+ * Write attribute from record into buf.
+ */
+void write_attr(Record *record, int attr_id, void *buf) {
+    char *r = (char *) malloc(SLOT_SIZE);
+
+    fixed_len_write(record, r);
+
+    for (int i = 0; i < ATTRIBUTE_SIZE; i++) {
+        *((char *) buf + i) = *(r + attr_id * ATTRIBUTE_SIZE + i);
+    }
+
+    free(r);
+}
+
 RecordIterator::RecordIterator(Heapfile *hFile) {
     page_size = hFile->page_size;
     heapfile = hFile;

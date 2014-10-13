@@ -106,6 +106,11 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
  */
 void read_csv2page(ifstream *file, Page *page);
 
+/**
+ * Write attribute from record into buf.
+ */
+void write_attr(Record *record, int attr_id, void *buf);
+
 class RecordIterator {
     private:
         Heapfile *heapfile;
