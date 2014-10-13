@@ -2,7 +2,7 @@
 
 CC = g++
 LISA = csv2colstore select2 select3 write_fixed_len_page read_fixed_len_page
-SAMMY = csv2heapfile scan insert select
+SAMMY = csv2heapfile scan insert select update
 ALL = $(LISA) $(SAMMY) 
 
 all: library.o $(LISA) $(SAMMY)
@@ -17,6 +17,9 @@ scan: scan.cc library.o
 	$(CC) -o $@ $< library.o
 
 insert: insert.cc library.o
+	$(CC) -o $@ $< library.o
+
+update: update.cc library.o
 	$(CC) -o $@ $< library.o
 
 select: select.cc library.o
