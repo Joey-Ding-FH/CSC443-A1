@@ -1,122 +1,164 @@
-#include <iostream>
 #include <iterator>
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <string>
+#include <stdio.h>
+#include <cstring>
 #include "library.h"
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
+    if (argc != 4)
+    {
+        fprintf(stderr, "USAGE: csv2colstore <csv_file> <colstore_name>"
+            "<pagesize>");
+        exit(1);
+    }
+    //USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
 
-	if (argc != 4)
-	{
-		fprintf(stderr, "USAGE: csv2colstore <csv_file> <colstore_name>"
-			"<pagesize>");
-		exit(1);
-	}
-	//USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
+    if (!ifstream(argv[1]))
+    {
+        fprintf(stderr, "Cannot open CSV file: %s", argv[1]);
+        exit(1);
+    }
+    ifstream csvfile(argv[1]);
 
-	FILE *csvfile = fopen(argv[1], "rb");
+    if (mkdir(argv[2], S_IRWXU | S_IRWXG | S_IROTH) == -1)
+    {
+        if (errno != EEXIST) { //if directory exists, swallow exception
+            fprintf(stderr, "Could not create storage directory: %s", argv[2]);
+            exit(1);
+        }
 
-	if (csvfile == NULL){
+    }
 
-		fprintf(stderr, "Cannot open CSV file: %s", argv[1]);
-		exit(1);
-	}
+    if (chdir(argv[2]) == -1)
+    {
+        fprintf(stderr, "Could not navigate to storage directory: %s", argv[2]);
+        exit(1);
+    }
 
-	if (mkdir(argv[2], S_IRWXU | S_IRWXG | S_IROTH) == -1)
-	{
-		if (errno != EEXIST) { //if directory exists, swallow exception
-			fprintf(stderr, "Could not create storage directory: %s", argv[2]);
-			exit(1);
-		}
+    int pageSize = atoi(argv[3]);
 
-	}
+    std::vector<Heapfile> attributeFiles;
+    std::vector<Page> workingPages; 
+    std::vector<int> workingPageIDs;
 
-	if (chdir(argv[2]) == -1)
-	{
-		fprintf(stderr, "Could not navigate to storage directory: %s", argv[2]);
-		exit(1);
-	}
+    char filename[3];
 
-	int pageSize = atoi(argv[3]);
+    for (int i = 0 ; i < ATTR_PER_RECORD; i++)
+    {
+        sprintf(filename, "%d", i);
+        FILE *file = fopen(filename, "wb+r"); 
+        Heapfile *hpFile = new Heapfile();
+        init_heapfile(hpFile, pageSize, file);
 
-	std::vector<Heapfile> attributeFiles;
-	std::vector<Page> workingPages; 
-	std::vector<int> workingPageIDs;
+        int pageID = alloc_page(hpFile);
 
-	char *filename;
+        Page *curPage = new Page();
+        init_fixed_len_page(curPage, pageSize, ATTRIBUTE_SIZE);
 
-	for (int i = 0 ; i < ATTR_PER_RECORD; i++)
-	{
-		sprintf(filename, "%d", i);
-		FILE *file = fopen(filename, "wb"); 
-		Heapfile *hpFile = new Heapfile();
-		init_heapfile(hpFile, pageSize, file);
+        attributeFiles.push_back(*hpFile); //line-up heapfiles with Pages
+        workingPages.push_back(*curPage);
+        workingPageIDs.push_back(pageID);
+    }
 
-		int pageID = alloc_page(hpFile);
+    // can either:
+    // initialize 100 Heap files, keep them in a vector
+    // every time we read an attribute, move to a different heap file
+    // also need array of page pointers to update as we read attribute by attribute
+    // (make sure slot_size is only size of 1 attribute)
+    // when page is full write out to disk, replace entry in page array...? 
 
-		Page *curPage = new Page();
-		init_fixed_len_page(curPage, pageSize, ATTRIBUTE_SIZE);
+    int numBytesRead = 0; 
+    int attrInd = 0; //index/"attributeID"
+    string line;
 
-		attributeFiles.push_back(*hpFile); //line-up heapfiles with Pages
-		workingPages.push_back(*curPage);
-		workingPageIDs.push_back(pageID);
-	}
+    while (getline(csvfile, line)) {
+        char *temp = (char *) malloc(strlen(line.c_str()) + 1);
+        strcpy(temp, line.c_str());
+        // NULL TERMINATE IT
 
-	// can either:
-	// initialize 100 Heap files, keep them in a vector
-	// every time we read an attribute, move to a different heap file
-	// also need array of page pointers to update as we read attribute by attribute
-	// (make sure slot_size is only size of 1 attribute)
-	// when page is full write out to disk, replace entry in page array...? 
+        char * buf;
+        buf = strtok (temp, ",");
+        while (buf != NULL)
+        {
+            Page *curPage = &workingPages[attrInd];
+            Heapfile *curFile = &attributeFiles[attrInd];
 
-	int numBytesRead = 0; 
-	int attrInd = 0; //index/"attributeID"
-	char *buf; 
+            Record *rec = new Record();
+            fixed_len_read(buf, ATTRIBUTE_SIZE, rec);
 
-	while (!feof(csvfile))
-	{
-		if (fread(buf, ATTRIBUTE_SIZE, 1, csvfile) != ATTRIBUTE_SIZE)
-			break;  //do nothing or throw error? decide later
+            if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
+            {
+                write_page(curPage, curFile, workingPageIDs[attrInd]);
 
-		Page *curPage = &workingPages[attrInd];
-		Heapfile *curFile = &attributeFiles[attrInd];
+                int newPageId = alloc_page(curFile);
 
-		Record *rec = new Record();
-		fixed_len_read(buf, ATTRIBUTE_SIZE, rec);
+                Page *newPage = new Page();
+                init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
 
-		if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
-		{
-			write_page(curPage, curFile, workingPageIDs[attrInd]);
+                workingPages[attrInd] = *newPage;
+                workingPageIDs[attrInd] = newPageId;
 
-			int newPageId = alloc_page(curFile);
+                free(curPage);
+            }
 
-			Page *newPage = new Page();
-			init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
+            attrInd = (attrInd + 1) % ATTR_PER_RECORD;
 
-			workingPages[attrInd] = *newPage;
-			workingPageIDs[attrInd] = newPageId;
+            buf = strtok (NULL, ",");
+        }
+    }
 
-			free(curPage);
-			fseek(csvfile, 1, SEEK_CUR); //skip either the comma or newline char
-		}
+    // while (!feof(csvfile))
+    // {
+    //  if (fread(buf, ATTRIBUTE_SIZE, 1, csvfile) != ATTRIBUTE_SIZE)
+    //      break;  //do nothing or throw error? decide later
 
-		attrInd = (attrInd + 1) % ATTR_PER_RECORD;
-	}
+    //  Page *curPage = &workingPages[attrInd];
+    //  Heapfile *curFile = &attributeFiles[attrInd];
+
+    //  Record *rec = new Record();
+    //  fixed_len_read(buf, ATTRIBUTE_SIZE, rec);
+
+    //  if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
+    //  {
+    //      write_page(curPage, curFile, workingPageIDs[attrInd]);
+
+    //      int newPageId = alloc_page(curFile);
+
+    //      Page *newPage = new Page();
+    //      init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
+
+    //      workingPages[attrInd] = *newPage;
+    //      workingPageIDs[attrInd] = newPageId;
+
+    //      free(curPage);
+    //      fseek(csvfile, 1, SEEK_CUR); //skip either the comma or newline char
+    //  }
+
+    //  attrInd = (attrInd + 1) % ATTR_PER_RECORD;
+    // }
 
 
-	//cleanup: write all the pages and close all the files
-	for (int i = 0; i < ATTR_PER_RECORD; i++)
-	{
-		Page *curPage = &workingPages[i];
-		Heapfile *curFile = &attributeFiles[i];
-		write_page(curPage, curFile, workingPageIDs[i]);
+    //cleanup: write all the pages and close all the files
+    for (int i = 0; i < ATTR_PER_RECORD; i++)
+    {
+        Page *curPage = &workingPages[i];
+        Heapfile *curFile = &attributeFiles[i];
+        write_page(curPage, curFile, workingPageIDs[i]);
 
-		fflush(curFile->file_ptr);
-		fclose(curFile->file_ptr);
+        fflush(curFile->file_ptr);
+        fclose(curFile->file_ptr);
 
-	}
+    }
 
-	return 0;
+    return 0;
 }
