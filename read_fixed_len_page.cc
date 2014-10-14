@@ -30,12 +30,16 @@ int main(int argc, char *argv[])
 		Page *page = new Page();
 		init_fixed_len_page(page, pageSize, SLOT_SIZE);
 
+		//fprintf(stdout, "Page initialized with pageSize %d, slotsize %d\n", page->page_size, page->slot_size);
+
 		//read in metadata first
 
 		char *slotInfo = (char *)malloc(fixed_len_page_capacity(page) * sizeof(char));
 		fread(page, sizeof(Page), 1, pageFile);
 
 		//cout << "Read some metadata" << endl;
+		//fprintf(stdout, "Page read in with pageSize %d, slotsize %d\n", page->page_size, page->slot_size);
+
 
 		fread(slotInfo, fixed_len_page_capacity(page) * sizeof(char), 1, pageFile);
 

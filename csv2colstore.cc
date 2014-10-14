@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
 
                 Page *newPage = new Page();
                 init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
+                add_fixed_len_page(newPage, rec);
 
 				//cout << "New page initialized" << endl;
 

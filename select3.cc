@@ -62,6 +62,13 @@ int main(int argc, char *argv[])
 
 	Heapfile *compareFile = new Heapfile();
 	FILE *f1 = fopen(cmpFile, "rb");
+	if (f1 == NULL)
+	{
+		fprintf(stderr, "Could not open attribute file %s for reading.\n", cmpFile);
+		exit(1);
+
+	}
+
     fread(compareFile, sizeof(Heapfile), 1, f1);
     compareFile->file_ptr = f1;
     compareFile->page_size = pageSize;
@@ -88,11 +95,17 @@ int main(int argc, char *argv[])
 	}
 
 	Heapfile *resultFile = new Heapfile();
-	FILE *f2 = fopen(cmpFile, "rb");
+	FILE *f2 = fopen(retFile, "rb");
+	if (f2 == NULL)
+	{
+		fprintf(stderr, "Could not open attribute file %s for reading\n", retFile);
+		exit(1);	
+
+	}
+	
     fread(resultFile, sizeof(retFile), 1, f2);
     resultFile->file_ptr = f2;
     resultFile->page_size = pageSize;
-	//char buf[10];
 	int maxIter = recordIds.size();
 	int i = 0;
 
