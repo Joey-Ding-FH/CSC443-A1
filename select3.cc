@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	if (argc != 7)
 	{
 		fprintf(stderr, "USAGE: select3 <colstore_name> <attribute_id> "
-			"<return_attribute_id> <start> <end> <page_size>");
+			"<return_attribute_id> <start> <end> <page_size>\n");
 		exit(1);
 	}
 
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 
 	while (recIter->hasNext())
 	{
+		RecordID curId = *recIter->cur_rid;
 		Record rec = recIter->next();
 		if (rec.size() != 1)
 		{
@@ -80,12 +81,12 @@ int main(int argc, char *argv[])
 
 		if (memcmp(startVal, rec[0], comparelen) <= 0
 			&& memcmp(endVal, rec[0], comparelen) >= 0)
-			recordIds.push_back(*recIter->cur_rid);
+			recordIds.push_back(curId);
 	}
 
 	Heapfile *resultFile = new Heapfile();
 	init_heapfile(resultFile, pageSize, fopen(retFile, "rb"));
-	char buf[10];
+	//char buf[10];
 	int maxIter = recordIds.size();
 	int i = 0;
 
@@ -94,11 +95,25 @@ int main(int argc, char *argv[])
 	//return those that are in this page, delete from vector
 	while (!recordIds.empty() && i < maxIter)
 	{
+		
 		int pid = recordIds[0].page_id; //arbitrarily pick the first recordId
-
+		
+		//cout << "PageId is: " << pid << endl;
 		Page *curPage = new Page();
 		read_page(resultFile, pid, curPage);
+
+		if (curPage->data == NULL)
+		{
+			cout << "READ FAIL" << endl;
+			exit(1);
+		}
+
+		//cout << "Page read successfully" << endl;
 		std::vector<RecordID>::iterator it = recordIds.begin();
+
+		//cout << "First RID is " << it->page_id << " ," << it->slot << endl;
+
+		//cout << "RecordList size is " << recordIds.size() << endl;
 		
 		//for (std::vector<RecordID>::iterator it = recordIds.begin(); 
 				//it != recordIds.end(); it++)
@@ -106,11 +121,15 @@ int main(int argc, char *argv[])
 		{
 			if (it->page_id == pid)
 			{
+				//cout << "inside loop now " << endl;
 				Record *curRec = new Record();
+				//cout << "current slot is: " << it->slot << endl;
 				read_fixed_len_page(curPage, it->slot, curRec);
+				
 				if (curRec->size() != 1)
 				{	
 					cout << "Record size is: " << curRec->size() << endl;
+					fprintf(stderr, "Page info is %d, %d\n", curPage->page_size, curPage->slot_size);
 					exit(1);
 				}
 				//fixed_len_read(buf, ATTRIBUTE_SIZE, curRec);
@@ -120,23 +139,20 @@ int main(int argc, char *argv[])
 				fprintf(stdout, "%s \n", temp);
 
 				it = recordIds.erase(it);
-				cout << "Size of recordIds is : " << recordIds.size() << endl;
+				//cout << "Size of recordIds is : " << recordIds.size() << endl;
 			}
 			else
 				it++;
 		}
 		i++;
 		delete curPage;
-		cout << "Left inner loop" << endl;
-		cout << "value of i is: " << i << endl;
-		cout << "size of recordsids is: " << recordIds.size() << endl;
 	}
 
-	cout << "Left the loop" << endl;
 
 	if (!recordIds.empty()) //smthg weird happened
 	{
-		//so do smthg?
+		fprintf(stderr, "Error: recordIds not empty at end of loops\n");
+		exit(1);
 	}
 
 	fclose(compareFile->file_ptr);

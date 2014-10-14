@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     if (argc != 4)
     {
         fprintf(stderr, "USAGE: csv2colstore <csv_file> <colstore_name>"
-            "<pagesize>");
+            "<pagesize>\n");
         exit(1);
     }
     //USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
         workingPageIDs.push_back(pageID);
     }
 
+	//cout << "Finished initializing structures" << endl;
+
     // can either:
     // initialize 100 Heap files, keep them in a vector
     // every time we read an attribute, move to a different heap file
@@ -84,11 +86,12 @@ int main(int argc, char *argv[])
 		int attrInd = 0; //index/"attributeID"
 		int len = strlen(line.c_str());
         char *temp = (char *) malloc(len + 1);
-		memset(temp, '\0', len);
+		memset(temp, '\0', len+1);
         strncpy(temp, line.c_str(), len);
 
-        char * buf;
+        char *buf;
         buf = strtok (temp, ",");
+		//cout << "Finished string business" << endl;
         while (buf != NULL)
         {
             Page *curPage = &workingPages[attrInd];
@@ -104,17 +107,23 @@ int main(int argc, char *argv[])
 
             if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
             {
+				//cout << "Doing page full stuff" << endl;
                 write_page(curPage, curFile, workingPageIDs[attrInd]);
 
+				//cout << "Page written successfully" << endl;
+
                 int newPageId = alloc_page(curFile);
+
+				//cout << "Page allocated successfully" << endl;
 
                 Page *newPage = new Page();
                 init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
 
+				//cout << "New page initialized" << endl;
+
                 workingPages[attrInd] = *newPage;
                 workingPageIDs[attrInd] = newPageId;
-
-                free(curPage);
+                
             }
 
             //attrInd = (attrInd + 1) % ATTR_PER_RECORD;
