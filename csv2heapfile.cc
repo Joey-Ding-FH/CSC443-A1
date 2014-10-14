@@ -29,13 +29,15 @@ int main(int argc, char *argv[]) {
     }
     ifstream file(csv_file);
     int pid = 1;
-    
+
     while (!file.eof()) {
-        alloc_page(heapfile);
+        int page_id = alloc_page(heapfile);
         Page *page = (Page *) malloc(sizeof(Page));
 
         read_page(heapfile, pid, page);
+
         read_csv2page(&file, page);
+
         write_page(page, heapfile, pid);
 
         free(page);

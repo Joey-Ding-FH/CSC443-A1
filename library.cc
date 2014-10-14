@@ -17,7 +17,7 @@ int get_free_space_size(int page_size);
 int get_number_of_pages(int page_size);
 size_t fwrite_with_check(const void *ptr, size_t size, size_t count, FILE *file);
 size_t fread_with_check(void *ptr, size_t size, size_t count, FILE *file);
-uint32_t alloc_page_at_end(FILE *file, int page_size);
+uint32_t alloc_page_at_end(FILE *file, int page_size, bool dir_page);
 int reach_page(Heapfile *heapfile, PageID pid);
 uint32_t read_offset(FILE *file);
 
@@ -173,31 +173,36 @@ PageID alloc_page(Heapfile *heapfile) {
     fflush(file);
 
     fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_SET);
+    uint32_t head_of_page = sizeof(Page);
 
     int free_space_size = get_free_space_size(page_size);
     int number_of_pages = get_number_of_pages(page_size);
-    int page_number = 0;
+    int page_number = 1;
 
     while(read_offset(file) != 0) {
         fseek(file, free_space_size, SEEK_CUR);
-        page_number++;
-        if (page_number % number_of_pages == 0) {
+        page_number += 1;
+        if (page_number / number_of_pages > 0 && page_number % number_of_pages == 1) {
             // If current directory page is full, go to next one.
-            fseek(file, -(number_of_pages * (get_entry_size(page_size)) + OFFSET_SIZE), SEEK_CUR);
+            fseek(file, head_of_page, SEEK_SET);
             uint32_t next_directory_page_offset = read_offset(file);
 
             if (next_directory_page_offset == 0) {
                 // If need to create new directory page.
-                next_directory_page_offset = alloc_page_at_end(file, page_size);
+                fseek(file, -OFFSET_SIZE, SEEK_CUR);
+                next_directory_page_offset = alloc_page_at_end(file, page_size, true);
                 fwrite_with_check(&next_directory_page_offset, sizeof(uint32_t), 1, file);
+                head_of_page = next_directory_page_offset + sizeof(Page);
             }
+
             fseek(file, next_directory_page_offset, SEEK_SET);
-            fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_SET);
+            fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
         }
     }
+
     fseek(file, -OFFSET_SIZE, SEEK_CUR);
 
-    uint32_t offset = alloc_page_at_end(file, page_size);
+    uint32_t offset = alloc_page_at_end(file, page_size, false);
 
     // Create new entry.
     fwrite_with_check(&offset, sizeof(uint32_t), 1, file);
@@ -205,7 +210,7 @@ PageID alloc_page(Heapfile *heapfile) {
 
     fflush(file);
 
-    return page_number + 1;
+    return page_number;
 }
 
 /**
@@ -360,8 +365,8 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     FILE *file = heapfile->file_ptr;
 
     int number_of_pages_per_dir = get_number_of_pages(page_size);
-    int nth_dir = pid / number_of_pages_per_dir;
-    int order_in_dir = pid % number_of_pages_per_dir;
+    int nth_dir = (pid - 1) / number_of_pages_per_dir;
+    int order_in_dir = (pid - 1) % number_of_pages_per_dir;
 
     rewind(file);
 
@@ -375,7 +380,7 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     }
 
     fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
-    fseek(file, (order_in_dir - 1) * get_entry_size(page_size), SEEK_CUR);
+    fseek(file, order_in_dir * get_entry_size(page_size), SEEK_CUR);
     uint32_t offset = read_offset(file);
 
     if (offset != 0) {
@@ -386,23 +391,25 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     return 0;
 }
 
-uint32_t alloc_page_at_end(FILE *file, int page_size) {
+uint32_t alloc_page_at_end(FILE *file, int page_size, bool dir_page) {
+    uint32_t current = ftell(file);
+    fseek (file, 0, SEEK_END);
+    uint32_t offset = ftell(file);
     Page *new_page = new Page();
     init_fixed_len_page(new_page, page_size, SLOT_SIZE);
 
-    long int current = ftell(file);
-    fseek (file, 0, SEEK_END);
-    uint32_t offset = ftell(file);
+    if (!dir_page) {
+        char *slot_info = (char *) malloc(fixed_len_page_capacity(new_page) * sizeof(char));
+        write_bytes(new_page->slot_info, slot_info);
 
-    char *slot_info = (char *) malloc(fixed_len_page_capacity(new_page) * sizeof(char));
-    write_bytes(new_page->slot_info, slot_info);
-
-    fwrite_with_check(new_page, sizeof(Page), 1, file);
-    fwrite_with_check(slot_info, fixed_len_page_capacity(new_page) * sizeof(char), 1, file);
-    fwrite_with_check(new_page->data, page_size, 1, file);
-
+        fwrite_with_check(new_page, sizeof(Page), 1, file);
+        fwrite_with_check(slot_info, fixed_len_page_capacity(new_page) * sizeof(char), 1, file);
+        fwrite_with_check(new_page->data, page_size, 1, file);
+    } else {
+        fwrite(new_page, sizeof(new_page), 1, file);
+        fwrite(new_page->data, page_size, 1, file);
+    }
     free(new_page->data);
-
     fseek(file, current, SEEK_SET);
 
     return offset;
