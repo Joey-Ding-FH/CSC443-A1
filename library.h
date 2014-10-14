@@ -27,6 +27,7 @@ typedef struct {
 typedef struct {
     FILE *file_ptr;
     int page_size;
+    uint32_t number_of_page;
 } Heapfile;
  
 typedef struct {

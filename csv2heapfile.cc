@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <assert.h>
 #include "library.h"
 
 using namespace std;
@@ -20,7 +21,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
-    init_heapfile(heapfile, page_size, fopen(heapfile_name , "wb+r"));
+    init_heapfile(heapfile, page_size, fopen(heapfile_name , "rb+"));
 
     if (!ifstream(csv_file))
     {
@@ -28,21 +29,30 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
     ifstream file(csv_file);
-    int pid = 1;
-
-    while (!file.eof()) {
-        int page_id = alloc_page(heapfile);
+    int pid;
+    int old_pid = 0;
+    while (1) {
         Page *page = (Page *) malloc(sizeof(Page));
-
-        read_page(heapfile, pid, page);
+        init_fixed_len_page(page, page_size, SLOT_SIZE);
 
         read_csv2page(&file, page);
+        if (file.eof()) {
+            free(page->data);
+            free(page);
+            break;
+        }
+        int old_pid = pid;
+        pid = alloc_page(heapfile);
+        if (pid - old_pid != 1) {
+            cout << "pid is " << pid << " but old pid is " << old_pid << endl;
+        }
 
         write_page(page, heapfile, pid);
 
+        free(page->data);
         free(page);
-        pid++;
     }
+    cout << "numer of page is " << pid << endl;
 
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);

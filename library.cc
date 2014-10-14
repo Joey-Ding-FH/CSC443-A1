@@ -25,13 +25,13 @@ uint32_t read_offset(FILE *file);
  * Compute the number of bytes required to serialize record
  */
 int fixed_len_sizeof(Record *record) {
-	int result = 0;
+    int result = 0;
 
-	for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
-		result += strlen(*it) * sizeof(char);
-	}
+    for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
+        result += strlen(*it) * sizeof(char);
+    }
 
-	return result;
+    return result;
 }
 
 /**
@@ -39,12 +39,12 @@ int fixed_len_sizeof(Record *record) {
  */
 void fixed_len_write(Record *record, void *buf) {
     int pos = 0;
-	for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
+    for (std::vector<V>::iterator it = record->begin(); it != record->end(); ++it) {
         for (const char *i = *it; *i != '\0'; i++) {
             *((char*) buf + pos) = *i;
             pos++;
         }
-	}
+    }
 }
 
 /**
@@ -53,9 +53,9 @@ void fixed_len_write(Record *record, void *buf) {
  * Read attribute by attribute, since we are not assuming anything about what size is and whose multiple it could be of
  */
 void fixed_len_read(void *buf, int size, Record *record) {
-	assert(size >= ATTRIBUTE_SIZE); //at least one attribute is being read
+    assert(size >= ATTRIBUTE_SIZE); //at least one attribute is being read
 
-	while (size >= ATTRIBUTE_SIZE){
+    while (size >= ATTRIBUTE_SIZE){
         char *temp = (char *) malloc(ATTRIBUTE_SIZE + 1);
         memset(temp, '\0', ATTRIBUTE_SIZE + 1);
         strncpy(temp, (char *)buf, ATTRIBUTE_SIZE);
@@ -63,45 +63,45 @@ void fixed_len_read(void *buf, int size, Record *record) {
 
         size -= ATTRIBUTE_SIZE;
         buf = ((char*)buf) + ATTRIBUTE_SIZE;
-	}
+    }
 }
 
 /**
  * Initializes a page using the given slot size
  */
 void init_fixed_len_page(Page *page, int page_size, int slot_size) {
-	assert(slot_size <= page_size);
+    assert(slot_size <= page_size);
 
-	page->data = malloc(page_size);
-	page->page_size = page_size;
-	page->slot_size = slot_size;
-	page->slot_info = new ByteArray;
+    page->data = malloc(page_size);
+    page->page_size = page_size;
+    page->slot_size = slot_size;
+    page->slot_info = new ByteArray;
 
-	int num_slots = fixed_len_page_capacity(page);
-	for (int i = 0; i < num_slots; i++)
-		page->slot_info->push_back('0');
+    int num_slots = fixed_len_page_capacity(page);
+    for (int i = 0; i < num_slots; i++)
+        page->slot_info->push_back('0');
 }
 
 /**
  * Calculates the maximal number of records/slots that fit in a page
  */
 int fixed_len_page_capacity(Page *page) {
-	return (page->page_size / page->slot_size);
+    return (page->page_size / page->slot_size);
 }
 
 /**
  * Calculate the free space (number of free slots) in the page
  */
 int fixed_len_page_freeslots(Page *page) {
-	
-	int num_free = 0;
-	//std::vector<char>::iterator it;
-	for (int i = 0; i < page->slot_info->size(); i++){
-		if (page->slot_info->at(i) == '0')
-			num_free++;
-	}
+    
+    int num_free = 0;
+    //std::vector<char>::iterator it;
+    for (int i = 0; i < page->slot_info->size(); i++){
+        if (page->slot_info->at(i) == '0')
+            num_free++;
+    }
 
-	return num_free; 
+    return num_free; 
 }
  
 /**
@@ -111,26 +111,26 @@ int fixed_len_page_freeslots(Page *page) {
  *   -1 if unsuccessful (page full)
  */
 int add_fixed_len_page(Page *page, Record *r){
-	int free_slots = fixed_len_page_freeslots(page);
-	if (free_slots > 0) {
-		for (int ind = 0; ind < page->slot_info->size(); ind++){
-			if (page->slot_info->at(ind) == '0'){
-				write_fixed_len_page(page, ind, r);
+    int free_slots = fixed_len_page_freeslots(page);
+    if (free_slots > 0) {
+        for (int ind = 0; ind < page->slot_info->size(); ind++){
+            if (page->slot_info->at(ind) == '0'){
+                write_fixed_len_page(page, ind, r);
                 page->slot_info->at(ind) = '1';
-				return ind;
-			}
-		}
-	
-	}
-	return -1;
+                return ind;
+            }
+        }
+    
+    }
+    return -1;
 }
  
 /**
  * Write a record into a given slot.
  */
 void write_fixed_len_page(Page *page, int slot, Record *r){
-	char *buf = ((char *)page->data + (slot * page->slot_size));
-	fixed_len_write(r, buf);
+    char *buf = ((char *)page->data + (slot * page->slot_size));
+    fixed_len_write(r, buf);
 }
  
 /**
@@ -140,10 +140,10 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
     if (page->slot_info->at(slot) == '0' || slot >= fixed_len_page_capacity(page))
         return;
 
-	int slotSize = page->slot_size;
+    int slotSize = page->slot_size;
 
-	char *buf = ((char * )page->data + (slot * slotSize));
-	fixed_len_read(buf, slotSize, r);
+    char *buf = ((char * )page->data + (slot * slotSize));
+    fixed_len_read(buf, slotSize, r);
 }
 
 
@@ -152,10 +152,12 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
  */
 void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
     heapfile->page_size = page_size;
+    heapfile->number_of_page = 0;
 
     Page *first_page = new Page();
     init_fixed_len_page(first_page, page_size, SLOT_SIZE);
 
+    fwrite(heapfile, sizeof(Heapfile), 1, file);
     fwrite(first_page, sizeof(Page), 1, file);
     fwrite(first_page->data, page_size, 1, file);
 
@@ -169,50 +171,41 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
  */
 PageID alloc_page(Heapfile *heapfile) {
     int page_size = heapfile->page_size;
+    int pid = heapfile->number_of_page + 1;
     FILE *file = heapfile->file_ptr;
 
-    rewind(file);
-    fflush(file);
+    int number_of_pages_per_dir = get_number_of_pages(page_size);
+    int nth_dir = (pid - 1) / number_of_pages_per_dir;
+    int order_in_dir = (pid - 1) % number_of_pages_per_dir;
 
-    fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_SET);
-    uint32_t head_of_page = sizeof(Page);
+    fseek(file, sizeof(Heapfile), SEEK_SET);
 
-    int free_space_size = get_free_space_size(page_size);
-    int number_of_pages = get_number_of_pages(page_size);
-    int page_number = 1;
-
-    while(read_offset(file) != 0) {
-        fseek(file, free_space_size, SEEK_CUR);
-        page_number += 1;
-        if (page_number / number_of_pages > 0 && page_number % number_of_pages == 1) {
-            // If current directory page is full, go to next one.
-            fseek(file, head_of_page, SEEK_SET);
-            uint32_t next_directory_page_offset = read_offset(file);
-
-            if (next_directory_page_offset == 0) {
-                // If need to create new directory page.
-                fseek(file, -OFFSET_SIZE, SEEK_CUR);
-                next_directory_page_offset = alloc_page_at_end(file, page_size, true);
-                fwrite_with_check(&next_directory_page_offset, sizeof(uint32_t), 1, file);
-                head_of_page = next_directory_page_offset + sizeof(Page);
-            }
-
-            fseek(file, next_directory_page_offset, SEEK_SET);
-            fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
+    for (int i = 0; i < nth_dir; i++) {
+        fseek(file, sizeof(Page), SEEK_CUR);
+        uint32_t offset_at = ftell(file);
+        uint32_t next_dir_offset = read_offset(file);
+        if (next_dir_offset == 0) {
+            next_dir_offset = alloc_page_at_end(file, page_size, true);
+            fseek(file, offset_at, SEEK_SET);
+            fwrite_with_check(&next_dir_offset, OFFSET_SIZE, 1, file);
         }
+        fseek(file, next_dir_offset, SEEK_SET);
     }
-
-    fseek(file, -OFFSET_SIZE, SEEK_CUR);
+    fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
+    fseek(file, order_in_dir * get_entry_size(page_size), SEEK_CUR);
 
     uint32_t offset = alloc_page_at_end(file, page_size, false);
 
     // Create new entry.
-    fwrite_with_check(&offset, sizeof(uint32_t), 1, file);
-    fwrite_with_check(&page_size, free_space_size, 1, file);
+    fwrite_with_check(&offset, OFFSET_SIZE, 1, file);
+    fwrite_with_check(&page_size, get_free_space_size(page_size), 1, file);
 
-    fflush(file);
+    heapfile->number_of_page = pid;
 
-    return page_number;
+    fseek(file, 0, SEEK_SET);
+    fwrite(heapfile, sizeof(Heapfile), 1, file);
+
+    return heapfile->number_of_page;
 }
 
 /**
@@ -225,13 +218,8 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page) {
         page->data = NULL;
         return;
     }
-
     fread_with_check(page, sizeof(Page), 1, file);
     page->data = malloc(page_size);
-    if (page->data == NULL) {
-        fputs("Memory error\n", stderr); 
-        exit(2);
-    }
     char *slot_info = (char *) malloc(fixed_len_page_capacity(page) * sizeof(char));
 
     fread_with_check(slot_info, fixed_len_page_capacity(page) * sizeof(char), 1, file);
@@ -267,7 +255,7 @@ int read_csv2page(ifstream *file, Page *page) {
     int free_space = fixed_len_page_freeslots(page);
     char chars_to_remove[] = ",\"";
     string line;
-	int numRecs = 0;
+    int numRecs = 0;
 
     for(;free_space > 0 && getline(*file, line); free_space--) {
         for (int i = 0; i < strlen(chars_to_remove); ++i) {
@@ -277,9 +265,9 @@ int read_csv2page(ifstream *file, Page *page) {
         fixed_len_read((void *) line.c_str(), SLOT_SIZE, record);
 
         add_fixed_len_page(page, record);
-		numRecs++;
+        numRecs++;
     }
-	return numRecs;
+    return numRecs;
 }
 
 /**
@@ -320,7 +308,7 @@ RecordIterator::RecordIterator(Heapfile *hFile) {
     cur_page = new Page;
     read_page(hFile, cur_rid->page_id, cur_page);
 
-    if (cur_page->data != NULL) {
+    if (heapfile->number_of_page > 0) {
         find_next();
     } else {
         has_next = false;
@@ -331,16 +319,18 @@ Record RecordIterator::next() {
     Record *record = new Record();;
     read_fixed_len_page(cur_page, cur_rid->slot, record);
     cur_rid->slot++;
+
     if (cur_rid->slot >= fixed_len_page_capacity(cur_page)) {
         cur_rid->page_id++;
         cur_rid->slot = 0;
-
-        read_page(heapfile, cur_rid->page_id, cur_page);
-
-        if (cur_page->data == NULL) {
+        if (cur_rid->page_id > heapfile->number_of_page) {
             has_next = false;
             return *record;
         }
+        free(cur_page->data);
+        cur_page = new Page;
+
+        read_page(heapfile, cur_rid->page_id, cur_page);
     }
     find_next();
 
@@ -355,19 +345,17 @@ void RecordIterator::find_next() {
     while (cur_page->slot_info->at(cur_rid->slot) == '0') {
         cur_rid->slot++;
         if (cur_rid->slot >= fixed_len_page_capacity(cur_page)) {
-            
             cur_rid->page_id++;
             cur_rid->slot = 0;
+            if (cur_rid->page_id > heapfile->number_of_page) {
+                has_next = false;
+                break;
+            }
 
             free(cur_page->data);
             cur_page = new Page;
 
             read_page(heapfile, cur_rid->page_id, cur_page);
-
-            if (cur_page->data == NULL) {
-                has_next = false;
-                break;
-            }
         }
     }
 }
@@ -380,7 +368,7 @@ int reach_page(Heapfile *heapfile, PageID pid) {
     int nth_dir = (pid - 1) / number_of_pages_per_dir;
     int order_in_dir = (pid - 1) % number_of_pages_per_dir;
 
-    rewind(file);
+    fseek(file, sizeof(Heapfile), SEEK_SET);
 
     for (int i = 0; i < nth_dir; i++) {
         fseek(file, sizeof(Page), SEEK_CUR);
@@ -390,7 +378,6 @@ int reach_page(Heapfile *heapfile, PageID pid) {
         }
         fseek(file, next_dir_offset, SEEK_SET);
     }
-
     fseek(file, sizeof(Page) + OFFSET_SIZE, SEEK_CUR);
     fseek(file, order_in_dir * get_entry_size(page_size), SEEK_CUR);
     uint32_t offset = read_offset(file);
@@ -418,7 +405,7 @@ uint32_t alloc_page_at_end(FILE *file, int page_size, bool dir_page) {
         fwrite_with_check(slot_info, fixed_len_page_capacity(new_page) * sizeof(char), 1, file);
         fwrite_with_check(new_page->data, page_size, 1, file);
     } else {
-        fwrite(new_page, sizeof(new_page), 1, file);
+        fwrite(new_page, sizeof(Page), 1, file);
         fwrite(new_page->data, page_size, 1, file);
     }
     free(new_page->data);
@@ -452,7 +439,7 @@ int get_free_space_size(int page_size) {
 }
 
 int get_number_of_pages(int page_size) {
-    return (page_size - OFFSET_SIZE) / (get_free_space_size(page_size) + OFFSET_SIZE);
+    return (page_size - OFFSET_SIZE) / get_entry_size(page_size);
 }
 
 uint32_t read_offset(FILE *file) {

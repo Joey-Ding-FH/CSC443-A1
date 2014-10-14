@@ -17,8 +17,6 @@ int main(int argc, char *argv[])
 	//start timer
 	clock_t start = clock();
 
-
-
 	if (!(ifstream(argv[1])))
 	{
 		fprintf(stderr, "Could not open csv file: %s", argv[1]);

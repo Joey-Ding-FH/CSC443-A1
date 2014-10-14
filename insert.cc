@@ -21,8 +21,9 @@ int main(int argc, char *argv[]) {
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
-    heapfile->page_size = page_size;
-    heapfile->file_ptr = fopen(heapfile_name, "rb+");
+    FILE *f = fopen(heapfile_name, "rb+");
+    fread(heapfile, sizeof(Heapfile), 1, f);
+    heapfile->file_ptr = f;
     if (heapfile->file_ptr == NULL) {
         fputs("heap file doesn't exist.\n", stderr);
         exit(2);
@@ -48,8 +49,8 @@ int main(int argc, char *argv[]) {
         Record *record = new Record;
         fixed_len_read((void *) line.c_str(), SLOT_SIZE, record);
 
-        if (cur_page->data == NULL) {
-            alloc_page(heapfile);
+        if (pid > heapfile->number_of_page) {
+            pid = alloc_page(heapfile);
             read_page(heapfile, pid, cur_page);
         }
 
@@ -58,13 +59,13 @@ int main(int argc, char *argv[]) {
             free(cur_page->data);
             cur_page = new Page;
             pid++;
-            read_page(heapfile, pid, cur_page);
 
-            if (cur_page->data == NULL) {
-                alloc_page(heapfile);
-                read_page(heapfile, pid, cur_page);
+            if (pid > heapfile->number_of_page) {
+                pid = alloc_page(heapfile);
             }
+            read_page(heapfile, pid, cur_page);
         }
+        cout << "insert record into page " << pid << endl;
         add_fixed_len_page(cur_page, record);
     }
     write_page(cur_page, heapfile, pid);

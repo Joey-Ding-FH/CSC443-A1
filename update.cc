@@ -35,8 +35,9 @@ int main(int argc, char *argv[]) {
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
-    heapfile->page_size = page_size;
-    heapfile->file_ptr = fopen(heapfile_name, "rb+");
+    FILE *f = fopen(heapfile_name, "rb+");
+    fread(heapfile, sizeof(Heapfile), 1, f);
+    heapfile->file_ptr = f;
     if (heapfile->file_ptr == NULL) {
         fputs("heap file doesn't exist.\n", stderr);
         exit(2);

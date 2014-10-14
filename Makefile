@@ -7,6 +7,8 @@ ALL = $(LISA) $(SAMMY)
 
 all: library.o $(LISA) $(SAMMY)
 
+sammy: library.o $(SAMMY)
+
 library.o: library.cc library.h
 	$(CC) -o $@ -c $<
 
