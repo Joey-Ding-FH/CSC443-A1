@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 void check_argv(int argc, char *argv[]) {
     if(argc != 6) {
-        fputs("usage: update <heapfile> <record_id> <attribute_id> <new_value> <page_size>\n",stderr);
+        fputs("usage: select <heapfile> <attribute_id> <start> <end> <page_size>\n",stderr);
         exit(2);
     }
 
