@@ -60,6 +60,7 @@ int main(int argc, char *argv[]){
 	FILE *f = fopen(fileName, "rb");
     fread(hpFile, sizeof(Heapfile), 1, f);
     hpFile->file_ptr = f;
+    hpFile->page_size = pageSize;
 
 	//cout << "Heapfile initialized for attributeId: " << fileName << endl;
 

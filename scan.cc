@@ -41,6 +41,7 @@ void scan(char *heapfile_name, int page_size) {
     FILE *f = fopen(heapfile_name, "rb+");
     fread(heapfile, sizeof(Heapfile), 1, f);
     heapfile->file_ptr = f;
+    heapfile->page_size = page_size;
     if (heapfile->file_ptr == NULL) {
         fputs("heap file doesn't exist.\n", stderr);
         exit(2);
