@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     free(argv2);
-    fclose(f);
 }
 
 void check_argv(int argc, char *argv[]) {
