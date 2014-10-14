@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
 
     write_page(page, heapfile, pid);
 
-    delete page;
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     free(argv2);
