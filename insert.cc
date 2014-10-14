@@ -50,23 +50,22 @@ int main(int argc, char *argv[]) {
 
         if (cur_page->data == NULL) {
             alloc_page(heapfile);
+            read_page(heapfile, pid, cur_page);
         }
 
-        if (fixed_len_page_freeslots(cur_page) > 0) {
-            add_fixed_len_page(cur_page, record);
-        } else {
+        while (fixed_len_page_freeslots(cur_page) <= 0) {
+            write_page(cur_page, heapfile, pid);
             free(cur_page->data);
             cur_page = new Page;
-            write_page(cur_page, heapfile, pid);
             pid++;
             read_page(heapfile, pid, cur_page);
 
             if (cur_page->data == NULL) {
                 alloc_page(heapfile);
+                read_page(heapfile, pid, cur_page);
             }
-
-            add_fixed_len_page(cur_page, record);
         }
+        add_fixed_len_page(cur_page, record);
     }
     write_page(cur_page, heapfile, pid);
 
