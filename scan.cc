@@ -49,7 +49,6 @@ void scan(char *heapfile_name, int page_size) {
     RecordIterator *i = new RecordIterator(heapfile);
     while (i->hasNext()) {
         count++;
-        char *buf = (char *) malloc(SLOT_SIZE);
         cout << "pageID " << i->cur_rid->page_id;
         cout << ", slot " << i->cur_rid->slot << ": ";
         Record record = i->next();

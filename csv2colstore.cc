@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     if (mkdir(argv[2], S_IRWXU | S_IRWXG | S_IROTH) == -1)
     {
         if (errno != EEXIST) { //if directory exists, swallow exception
-            fprintf(stderr, "Could not create storage directory: %s", argv[2]);
+            fprintf(stderr, "Could not create storage directory: %s\n", argv[2]);
             exit(1);
         }
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     if (chdir(argv[2]) == -1)
     {
-        fprintf(stderr, "Could not navigate to storage directory: %s", argv[2]);
+        fprintf(stderr, "Could not navigate to storage directory: %s\n", argv[2]);
         exit(1);
     }
 
@@ -77,14 +77,15 @@ int main(int argc, char *argv[])
     // (make sure slot_size is only size of 1 attribute)
     // when page is full write out to disk, replace entry in page array...? 
 
-    int numBytesRead = 0; 
-    int attrInd = 0; //index/"attributeID"
+
     string line;
 
     while (getline(csvfile, line)) {
-        char *temp = (char *) malloc(strlen(line.c_str()) + 1);
-        strcpy(temp, line.c_str());
-        // NULL TERMINATE IT
+		int attrInd = 0; //index/"attributeID"
+		int len = strlen(line.c_str());
+        char *temp = (char *) malloc(len + 1);
+		memset(temp, '\0', len);
+        strncpy(temp, line.c_str(), len);
 
         char * buf;
         buf = strtok (temp, ",");
@@ -95,6 +96,11 @@ int main(int argc, char *argv[])
 
             Record *rec = new Record();
             fixed_len_read(buf, ATTRIBUTE_SIZE, rec);
+
+			//test test
+			//cout << "Record entries are: " << endl; 
+			//for (int i = 0; i < rec->size(); i++)
+				//cout << rec->at(i) << endl;
 
             if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
             {
@@ -111,42 +117,12 @@ int main(int argc, char *argv[])
                 free(curPage);
             }
 
-            attrInd = (attrInd + 1) % ATTR_PER_RECORD;
+            //attrInd = (attrInd + 1) % ATTR_PER_RECORD;
+			attrInd++;
 
             buf = strtok (NULL, ",");
         }
     }
-
-    // while (!feof(csvfile))
-    // {
-    //  if (fread(buf, ATTRIBUTE_SIZE, 1, csvfile) != ATTRIBUTE_SIZE)
-    //      break;  //do nothing or throw error? decide later
-
-    //  Page *curPage = &workingPages[attrInd];
-    //  Heapfile *curFile = &attributeFiles[attrInd];
-
-    //  Record *rec = new Record();
-    //  fixed_len_read(buf, ATTRIBUTE_SIZE, rec);
-
-    //  if (add_fixed_len_page(curPage, rec) == -1) //page full do smthg
-    //  {
-    //      write_page(curPage, curFile, workingPageIDs[attrInd]);
-
-    //      int newPageId = alloc_page(curFile);
-
-    //      Page *newPage = new Page();
-    //      init_fixed_len_page(newPage, pageSize, ATTRIBUTE_SIZE);
-
-    //      workingPages[attrInd] = *newPage;
-    //      workingPageIDs[attrInd] = newPageId;
-
-    //      free(curPage);
-    //      fseek(csvfile, 1, SEEK_CUR); //skip either the comma or newline char
-    //  }
-
-    //  attrInd = (attrInd + 1) % ATTR_PER_RECORD;
-    // }
-
 
     //cleanup: write all the pages and close all the files
     for (int i = 0; i < ATTR_PER_RECORD; i++)
