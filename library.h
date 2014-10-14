@@ -10,7 +10,7 @@ using namespace std;
 
 #define OFFSET_SIZE sizeof(uint32_t)
 #define ATTRIBUTE_SIZE 10
-#define ATTR_PER_RECORD 10
+#define ATTR_PER_RECORD 100
 #define SLOT_SIZE ATTRIBUTE_SIZE * ATTR_PER_RECORD
 
 typedef const char* V;
