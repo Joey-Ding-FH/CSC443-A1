@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstring>
 #include <stdio.h>
+#include <stdint.h>
 
 using namespace std;
 
