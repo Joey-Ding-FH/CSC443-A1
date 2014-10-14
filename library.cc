@@ -129,7 +129,7 @@ int add_fixed_len_page(Page *page, Record *r){
  * Write a record into a given slot.
  */
 void write_fixed_len_page(Page *page, int slot, Record *r){
-	char *buf = ((char *)page->data + (slot * SLOT_SIZE));
+	char *buf = ((char *)page->data + (slot * page->slot_size));
 	fixed_len_write(r, buf);
 }
  
@@ -139,9 +139,11 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
 void read_fixed_len_page(Page *page, int slot, Record *r){
     if (page->slot_info->at(slot) == '0' || slot >= fixed_len_page_capacity(page))
         return;
+
+	int slotSize = page->slot_size;
     
-	char *buf = ((char * )page->data + (slot * SLOT_SIZE));
-	fixed_len_read(buf, SLOT_SIZE, r);
+	char *buf = ((char * )page->data + (slot * slotSize));
+	fixed_len_read(buf, slotSize, r);
 }
 
 
@@ -321,9 +323,8 @@ RecordIterator::RecordIterator(Heapfile *hFile) {
 }
 
 Record RecordIterator::next() {
-    Record *record = new Record();
+    Record *record = new Record();;
     read_fixed_len_page(cur_page, cur_rid->slot, record);
-
     cur_rid->slot++;
     find_next();
 

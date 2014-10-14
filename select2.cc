@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "Could not find file for attribute %s", fileName);
 		exit(1);
 	}
+	closedir(colStore);
 
 	if (chdir(dirName) == -1)
 	{
@@ -57,30 +58,31 @@ int main(int argc, char *argv[]){
 	Heapfile *hpFile = new Heapfile();
 	init_heapfile(hpFile, pageSize, fopen(fileName, "rb"));
 
-	cout << "Heapfile initialized for attributeId: " << fileName << endl;
+	//cout << "Heapfile initialized for attributeId: " << fileName << endl;
 
 	RecordIterator *recIter = new RecordIterator(hpFile);
 	
 	int comparelen = (strlen(startVal) < ATTRIBUTE_SIZE) ? strlen(startVal)  : ATTRIBUTE_SIZE;
 	comparelen = (strlen(endVal) < comparelen) ? strlen(endVal) : comparelen;
 
+	//cout << "Length of comparison is :" << comparelen << endl;
+
 	while (recIter->hasNext())
 	{
-		cout << "Record exists" << endl;
 		Record rec = recIter->next();
 		if(rec.size() != 1)
 		{
-			//print some sort of error..or just keep going?
+			fprintf(stderr, "Error: Record size is %d\n", (int)rec.size());
 			exit(1);
 		}
-		cout << "Record is" << rec[0] << endl;
 
-		if (memcmp(startVal, rec[0], ATTRIBUTE_SIZE) <= 0
-			&& memcmp(endVal, rec[0], ATTRIBUTE_SIZE) >= 0)
+		if (memcmp(startVal, rec[0], comparelen) <= 0
+			&& memcmp(endVal, rec[0], comparelen) >= 0)
 		{
-			char buf[5]; 
-			fixed_len_read(buf, 5, &rec);
-			fprintf(stdout, "%s \n", buf);
+			char ret[6];
+			memset(ret, '\0', 6);
+			strncpy(ret, rec[0], 5);
+			fprintf(stdout, "%s \n", ret);
 		}
 	}
 

@@ -3,6 +3,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string>
 #include "library.h"
 
 int main(int argc, char *argv[])
@@ -15,24 +17,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	//assuming: colstore_name is a directory that exists
-
-	if (chdir(argv[1]) == -1)
-	{
-		fprintf(stderr, "Could not navigate to storage directory: %s", argv[2]);
-		exit(1);
-	}
-
-	//TODO: parsing for case where <colstore_name> is a full path? or whatever...
-
-	DIR *colStore = opendir(argv[1]);
-	if (colStore == NULL)
-	{
-		fprintf(stderr, "Could not open directory %s for reading.", argv[2]);
-		exit(1);
-
-	}
-
+	char *dirName = argv[1];
 	char *cmpFile = argv[2];
 	char *retFile = argv[3];
 	char *startVal = argv[4];
@@ -40,19 +25,38 @@ int main(int argc, char *argv[])
 	int pageSize = atoi(argv[6]);
 	std::vector<RecordID> recordIds;
 
-	//find file for attribute to compare
-	struct dirent *entr = readdir(colStore);
+	//assuming: colstore_name is a directory that exists
 
-	while (entr != NULL)
+	DIR *colStore = opendir(argv[1]);
+	if (colStore == NULL)
 	{
-		if (strncmp(entr->d_name, cmpFile, strlen(cmpFile)) == 0)
-			break;
-		entr = readdir(colStore);
+		fprintf(stderr, "Could not open directory %s for reading.\n", argv[1]);
+		exit(1);
+
 	}
 
-	if (entr == NULL)
+	//find file for attribute to compare
+	struct dirent *entr = readdir(colStore);
+	int filesFound = 0;
+	while (entr != NULL && filesFound  < 2)
 	{
-		fprintf(stderr, "Could not find file for attribute %s", cmpFile);
+		if (strncmp(entr->d_name, cmpFile, strlen(cmpFile)) == 0)
+			filesFound++;
+		if (strncmp(entr->d_name, retFile, strlen(retFile)) == 0)
+			filesFound++;
+		entr = readdir(colStore);
+	}
+	closedir(colStore);
+
+	if (entr == NULL && filesFound < 2)
+	{
+		fprintf(stderr, "Could not find both files for attributes %s and %s\n", cmpFile, retFile);
+		exit(1);
+	}
+
+	if (chdir(dirName) == -1)
+	{
+		fprintf(stderr, "Could not navigate to storage directory: %s", dirName);
 		exit(1);
 	}
 
@@ -60,23 +64,28 @@ int main(int argc, char *argv[])
 	init_heapfile(compareFile, pageSize, fopen(cmpFile, "rb"));
 
 	RecordIterator *recIter = new RecordIterator(compareFile);
+	
+	int comparelen = (strlen(startVal) < ATTRIBUTE_SIZE) ? strlen(startVal)  : ATTRIBUTE_SIZE;
+	comparelen = (strlen(endVal) < comparelen) ? strlen(endVal) : comparelen;
+
 
 	while (recIter->hasNext())
 	{
 		Record rec = recIter->next();
 		if (rec.size() != 1)
 		{
-
+			fprintf(stderr, "Error: Record size is %d\n", (int)rec.size());
+			exit(1);
 		}
 
-		if (memcmp(startVal, rec[0], ATTRIBUTE_SIZE) <= 0
-			&& memcmp(endVal, rec[0], ATTRIBUTE_SIZE) >= 0)
+		if (memcmp(startVal, rec[0], comparelen) <= 0
+			&& memcmp(endVal, rec[0], comparelen) >= 0)
 			recordIds.push_back(*recIter->cur_rid);
 	}
 
 	Heapfile *resultFile = new Heapfile();
 	init_heapfile(resultFile, pageSize, fopen(retFile, "rb"));
-	char buf[5];
+	char buf[10];
 	int maxIter = recordIds.size();
 	int i = 0;
 
@@ -89,21 +98,41 @@ int main(int argc, char *argv[])
 
 		Page *curPage = new Page();
 		read_page(resultFile, pid, curPage);
-		for (std::vector<RecordID>::iterator it = recordIds.begin(); 
-				it != recordIds.end(); it++)
+		std::vector<RecordID>::iterator it = recordIds.begin();
+		
+		//for (std::vector<RecordID>::iterator it = recordIds.begin(); 
+				//it != recordIds.end(); it++)
+		while (it != recordIds.end())
 		{
 			if (it->page_id == pid)
 			{
 				Record *curRec = new Record();
 				read_fixed_len_page(curPage, it->slot, curRec);
-				fixed_len_read(buf, 5, curRec);
-				fprintf(stdout, "%s \n", buf);
+				if (curRec->size() != 1)
+				{	
+					cout << "Record size is: " << curRec->size() << endl;
+					exit(1);
+				}
+				//fixed_len_read(buf, ATTRIBUTE_SIZE, curRec);
+				char temp[6]; 
+				memset(temp, '\0', 6);
+				strncpy(temp, curRec->at(0), 5);
+				fprintf(stdout, "%s \n", temp);
 
-				recordIds.erase(it);
+				it = recordIds.erase(it);
+				cout << "Size of recordIds is : " << recordIds.size() << endl;
 			}
+			else
+				it++;
 		}
-		i++; //for safety
+		i++;
+		delete curPage;
+		cout << "Left inner loop" << endl;
+		cout << "value of i is: " << i << endl;
+		cout << "size of recordsids is: " << recordIds.size() << endl;
 	}
+
+	cout << "Left the loop" << endl;
 
 	if (!recordIds.empty()) //smthg weird happened
 	{
