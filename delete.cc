@@ -31,12 +31,12 @@ int main(int argc, char *argv[]) {
     }
 
     Page *page = new Page;
-    read_page(heapfile, pid, page);
-    if (page->data == NULL) {
+    if (pid > heapfile->number_of_page) {
         fputs("record with <record_id> doesn't exist.\n", stderr);
         exit(2);
     }
-
+    read_page(heapfile, pid, page);
+    
     if (slot >= fixed_len_page_capacity(page)) {
         fputs("record with <record_id> doesn't exist.\n", stderr);
         exit(2);
