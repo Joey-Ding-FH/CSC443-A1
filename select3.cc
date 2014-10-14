@@ -61,9 +61,9 @@ int main(int argc, char *argv[])
 	}
 
 	Heapfile *compareFile = new Heapfile();
-	FILE *f = fopen(cmpFile, "rb");
-    fread(compareFile, sizeof(Heapfile), 1, f);
-    compareFile->file_ptr = f;
+	FILE *f1 = fopen(cmpFile, "rb");
+    fread(compareFile, sizeof(Heapfile), 1, f1);
+    compareFile->file_ptr = f1;
 
 	RecordIterator *recIter = new RecordIterator(compareFile);
 	
@@ -87,9 +87,9 @@ int main(int argc, char *argv[])
 	}
 
 	Heapfile *resultFile = new Heapfile();
-	FILE *f = fopen(cmpFile, "rb");
-    fread(resultFile, sizeof(retFile), 1, f);
-    resultFile->file_ptr = f;
+	FILE *f2 = fopen(cmpFile, "rb");
+    fread(resultFile, sizeof(retFile), 1, f2);
+    resultFile->file_ptr = f2;
 	//char buf[10];
 	int maxIter = recordIds.size();
 	int i = 0;
