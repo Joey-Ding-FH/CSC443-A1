@@ -58,8 +58,8 @@ int main(int argc, char *argv[]){
 
 	Heapfile *hpFile = new Heapfile();
 	FILE *f = fopen(fileName, "rb");
-    fread(heapfile, sizeof(Heapfile), 1, f);
-    heapfile->file_ptr = f;
+    fread(hpFile, sizeof(Heapfile), 1, f);
+    hpFile->file_ptr = f;
 
 	//cout << "Heapfile initialized for attributeId: " << fileName << endl;
 
