@@ -41,12 +41,7 @@ int main(int argc, char *argv[]) {
             free(page);
             break;
         }
-        int old_pid = pid;
         pid = alloc_page(heapfile);
-        if (pid - old_pid != 1) {
-            cout << "pid is " << pid << " but old pid is " << old_pid << endl;
-        }
-
         write_page(page, heapfile, pid);
 
         free(page->data);
