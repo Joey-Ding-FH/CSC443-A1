@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
 	if (argc != 6)
 	{
 		fprintf(stderr, "USAGE: select2 <colstore_name> <attribute_id> <start>"
-			"<end> <page_size>");
+			"<end> <page_size>\n");
 		exit(1);
 	}
 
