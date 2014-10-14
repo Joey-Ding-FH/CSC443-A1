@@ -141,7 +141,7 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
         return;
 
 	int slotSize = page->slot_size;
-    
+
 	char *buf = ((char * )page->data + (slot * slotSize));
 	fixed_len_read(buf, slotSize, r);
 }
@@ -331,6 +331,17 @@ Record RecordIterator::next() {
     Record *record = new Record();;
     read_fixed_len_page(cur_page, cur_rid->slot, record);
     cur_rid->slot++;
+    if (cur_rid->slot >= fixed_len_page_capacity(cur_page)) {
+        cur_rid->page_id++;
+        cur_rid->slot = 0;
+
+        read_page(heapfile, cur_rid->page_id, cur_page);
+
+        if (cur_page->data == NULL) {
+            has_next = false;
+            return *record;
+        }
+    }
     find_next();
 
     return *record;
