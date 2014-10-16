@@ -20,6 +20,9 @@ int main(int argc, char *argv[]) {
     int slot = atoi(strtok(NULL, "-"));
     int page_size = atoi(argv[3]);
 
+    //start timer
+    clock_t start = clock();
+
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
     FILE *f = fopen(heapfile_name, "rb+");
@@ -49,6 +52,9 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     free(argv2);
+
+    int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 }
 
 void check_argv(int argc, char *argv[]) {

@@ -23,6 +23,9 @@ int main(int argc, char *argv[]) {
     char *new_value = argv[4];
     int page_size = atoi(argv[5]);
 
+    //start timer
+    clock_t start = clock();
+
     char *update_value = (char *) malloc(ATTRIBUTE_SIZE + 1);
     for (int i = 0; i < ATTRIBUTE_SIZE; i++) {
         if (i < strlen(new_value)) {
@@ -69,6 +72,9 @@ int main(int argc, char *argv[]) {
     fflush(heapfile->file_ptr);
     fclose(heapfile->file_ptr);
     free(argv2);
+
+    int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 }
 
 void check_argv(int argc, char *argv[]) {

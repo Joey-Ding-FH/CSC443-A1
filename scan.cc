@@ -18,7 +18,13 @@ int main(int argc, char *argv[]) {
     char *heapfile_name = argv[1];
     int page_size = atoi(argv[2]);
 
+    //start timer
+    clock_t start = clock();
+
     scan(heapfile_name, page_size);
+
+    int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 }
 
 void check_argv(int argc, char *argv[]) {
