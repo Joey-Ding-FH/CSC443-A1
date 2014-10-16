@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     int page_size = atoi(argv[5]);
 
     //start timer
-    clock_t start = clock();
+    clock_t start_timer = clock();
 
     // Initialize heap file.
     Heapfile *heapfile = new Heapfile;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     fclose(f);
 
-    int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    int msecTime = (clock() - start_timer) * 1000 / CLOCKS_PER_SEC;
     fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 }
 
