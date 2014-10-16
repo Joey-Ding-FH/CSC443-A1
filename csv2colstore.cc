@@ -23,6 +23,9 @@ int main(int argc, char *argv[])
     }
     //USAGE: csv2colstore <csv_file> <colstore_name> <pagesize>
 
+    //start timer
+    clock_t start = clock();
+
     if (!ifstream(argv[1]))
     {
         fprintf(stderr, "Cannot open CSV file: %s", argv[1]);
@@ -145,6 +148,9 @@ int main(int argc, char *argv[])
         fclose(curFile->file_ptr);
 
     }
+
+    int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 
     return 0;
 }

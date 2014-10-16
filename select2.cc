@@ -18,6 +18,9 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
+	//start timer
+    clock_t start = clock();
+
 	char *dirName = argv[1];
 	char *fileName = argv[2];
 	char *startVal = argv[3];
@@ -91,6 +94,10 @@ int main(int argc, char *argv[]){
 	}
 
 	fclose(hpFile->file_ptr);
+
+	int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
+
 
 	return 0;
 }

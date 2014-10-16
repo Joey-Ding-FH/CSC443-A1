@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	//start timer
+    clock_t start = clock();
+
 	char *dirName = argv[1];
 	char *cmpFile = argv[2];
 	char *retFile = argv[3];
@@ -102,7 +105,7 @@ int main(int argc, char *argv[])
 		exit(1);	
 
 	}
-	
+
     fread(resultFile, sizeof(retFile), 1, f2);
     resultFile->file_ptr = f2;
     resultFile->page_size = pageSize;
@@ -176,6 +179,9 @@ int main(int argc, char *argv[])
 
 	fclose(compareFile->file_ptr);
 	fclose(resultFile->file_ptr);
+
+	int msecTime = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+    fprintf(stdout, "TIME: %d milliseconds\n", msecTime);
 
 
 	return 0;
